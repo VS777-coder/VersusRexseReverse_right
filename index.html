@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Versus Revise - Right Reel Reverse Lookup</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .state-tabs { display: flex; width: 100%; background: #222; border: 1px solid #444; border-radius: 4px; overflow: hidden; margin-bottom: 5px; flex-shrink: 0; }
+        .state-tab { flex: 1; text-align: center; padding: 12px 2px; font-size: 10px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; color: #aaa; transition: 0.2s; }
+        
+        .tab-hazure { background: rgba(255, 255, 255, 0.05); }
+        .tab-x      { background: rgba(48, 79, 254, 0.15); }
+        .tab-seven  { background: rgba(213, 0, 0, 0.15); }
+        .tab-bar    { background: rgba(100, 100, 100, 0.15); }
+
+        .tab-hazure.active { background: #eee; color: #000; }
+        .tab-x.active      { background: #304ffe; color: #fff; }
+        .tab-seven.active  { background: #d50000; color: #fff; }
+        .tab-bar.active    { background: #000; color: #fff; border-bottom: 3px solid #777; }
+
+        .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; width: 100%; }
+
+        .reel-frame { 
+            width: 100px; 
+            height: 490px; 
+            background: #000; 
+            border: 2px solid #444; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            flex-shrink: 0;
+            position: relative;
+            touch-action: pan-y; 
+        }
+        .reel-window { height: 100%; display: flex; flex-direction: column; }
+        .symbol { height: 70px; display: flex; align-items: center; border-bottom: 1px solid #1a1a1a; }
+        .index-num { width: 20px; color: #ffd700; text-align: center; font-size: 9px; font-weight: bold; }
+        .symbol-image { flex-grow: 1; height: 100%; background-image: url('reel_right.png'); background-size: 100% 2100%; }
+        .center-guide { position: absolute; top: 140px; left: 0; width: 100%; height: 210px; border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.05); pointer-events: none; z-index: 10; box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.3); }
+
+        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; min-width: 0; }
+        .flag-list { padding: 2px; display: flex; flex-direction: column; height: 100%; }
+        
+        .flag-item { display: flex; align-items: center; height: calc(100% / 13); min-height: 36px; padding: 0 6px; border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); }
+        .flag-name { font-size: 14px; font-weight: bold; width: 75px; flex-shrink: 0; }
+        .flag-data { font-size: 14px; color: #fff; font-family: monospace; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+
+        .c-rep    { border-left-color: #00ccff; color: #00ccff; background: rgba(0, 204, 255, 0.08); } 
+        .c-bell   { border-left-color: #eeee00; color: #eeee00; background: rgba(238, 238, 0, 0.08); } 
+        .c-suika  { border-left-color: #00ff66; color: #00ff66; background: rgba(0, 255, 102, 0.08); } 
+        .c-cher   { border-left-color: #ff0066; color: #ff0066; background: rgba(255, 0, 102, 0.08); }
+        .c-hazure { border-left-color: #888888; color: #cccccc; background: rgba(136, 136, 136, 0.08); }
+        .c-tok    { border-left-color: #cc33ff; color: #cc33ff; background: rgba(204, 51, 255, 0.08); }
+    </style>
+</head>
+<body>
+
+    <div class="state-tabs">
+        <div id="tab-hazure" class="state-tab tab-hazure active" onclick="switchState('hazure')">未成立(右1)</div>
+        <div id="tab-x_flag" class="state-tab tab-x" onclick="switchState('x_flag')">XBIG(右1)</div>
+        <div id="tab-seven_flag" class="state-tab tab-seven" onclick="switchState('seven_flag')">7BIG(右1)</div>
+        <div id="tab-bar_flag" class="state-tab tab-bar" onclick="switchState('bar_flag')">REG(右1)</div>
+    </div>
+
+    <div class="main-content">
+        <div id="reel-touch" class="reel-frame">
+            <div class="center-guide"></div>
+            <div id="reel-window" class="reel-window"></div>
+        </div>
+        <div class="result-area">
+            <div id="flag-list" class="flag-list"></div>
+        </div>
+    </div>
+
+<script>
+    const FLAG_DEFS = [
+        { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "通常リプ", c: "rep" },
+        { k: "jac_rep", n: "JACリプ", c: "rep" }, { k: "rt_rep", n: "RTリプ", c: "rep" },
+        { k: "bellA", n: "ベルA", c: "bell" }, { k: "bellB", n: "ベルB", c: "bell" },
+        { k: "suikaA", n: "スイカA", c: "suika" }, { k: "suikaB", n: "スイカB", c: "suika" },
+        { k: "cherA", n: "チェリーA", c: "cher" }, { k: "cherB", n: "チェリーB", c: "cher" },
+        { k: "tokA", n: "特殊役A", c: "tok" }, { k: "tokB", n: "特殊役B", c: "tok" },
+        { k: "tokC", n: "特殊役C", c: "tok" }, { k: "tokD", n: "特殊役D", c: "tok" }, { k: "tokE", n: "特殊役E", c: "tok" }
+    ];
+
+    const GOD_DATA = {
+        hazure: {
+            hazure:[0,0,2,3,0,1,0,3,3,3,1,0,2,3,2,1,0,2,2,0,0],
+            normal_rep:[3,0,1,1,4,2,1,0,0,2,0,0,4,2,1,0,3,2,1,0,3],
+            jac_rep:[0,1,2,0,4,3,2,1,1,2,1,4,4,3,2,1,0,3,2,1,0],
+            rt_rep:[3,0,1,1,4,2,1,0,0,2,0,0,4,2,1,0,3,2,1,0,3],
+            bellA:[1,1,0,2,1,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2],
+            bellB:[1,1,0,2,1,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2],
+            suikaA:[3,2,0,0,2,0,0,4,4,0,4,3,4,4,4,1,2,3,0,3,0],
+            suikaB:[3,2,0,0,2,0,0,4,4,0,4,3,4,4,4,1,2,3,0,3,0],
+            cherA:[1,2,2,2,1,0,0,1,3,2,2,1,4,4,2,3,2,1,0,3,2],
+            cherB:[1,2,2,2,1,0,0,1,3,2,2,1,4,4,2,3,2,1,0,3,2],
+            tokA:Array(21).fill(null),tokB:Array(21).fill(null),tokC:Array(21).fill(null),tokD:Array(21).fill(null),tokE:Array(21).fill(null)
+        },
+        x_flag: {
+            hazure:[1,0,1,0,1,0,2,2,0,0,0,0,1,3,4,1,2,3,4,3,2],
+            normal_rep:[3,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,2,2,1,0,3],
+            jac_rep:[2,1,0,0,3,2,1,1,2,1,2,4,4,3,2,1,3,2,1,1,0],
+            rt_rep:[3,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            bellA:[1,1,2,1,1,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2],
+            bellB:[1,1,2,1,1,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2],
+            suikaA:[3,0,1,1,1,0,2,4,0,2,2,0,1,3,4,1,2,3,4,3,2],
+            suikaB:[3,0,1,1,1,0,2,4,0,2,2,0,1,3,4,1,2,3,4,3,2],
+            cherA:[1,3,2,2,1,1,1,1,3,2,1,1,3,3,2,3,2,1,0,3,2],
+            cherB:[1,3,2,2,1,1,1,1,3,2,1,1,3,3,2,3,2,1,0,3,2],
+            tokA:[1,1,2,2,2,0,0,2,2,4,2,0,3,0,1,0,2,3,4,3,2],
+            tokB:[1,1,1,1,2,1,4,4,2,2,3,3,3,3,1,1,1,1,4,3,2],
+            tokC:[1,1,2,2,2,0,0,2,2,4,2,0,3,0,1,0,2,3,4,3,2],
+            tokD:[1,1,1,1,0,4,4,1,1,0,1,0,4,0,3,0,0,0,4,3,2],
+            tokE:[1,1,1,1,2,0,0,2,2,4,2,0,3,0,1,0,2,3,4,3,2]
+        },
+        seven_flag: {
+            hazure:[1,1,4,3,2,2,3,1,0,4,3,2,3,0,0,0,2,3,0,1,0],
+            normal_rep:[1,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            jac_rep:[1,1,1,4,4,0,4,1,1,0,1,2,0,4,2,1,3,2,1,0,0],
+            rt_rep:[1,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            bellA:[1,1,3,1,1,1,3,2,1,1,3,2,1,1,4,3,2,1,1,3,2],
+            bellB:[1,1,0,2,1,1,0,1,2,1,2,3,1,3,0,0,2,1,0,1,2],
+            suikaA:[1,1,2,2,2,0,0,4,4,0,3,2,1,1,1,1,2,3,0,3,0],
+            suikaB:[1,1,2,2,2,0,0,4,4,0,3,2,1,1,1,1,2,3,0,3,0],
+            cherA:[1,3,3,2,1,1,1,1,3,1,3,1,1,1,1,1,1,3,1,3,2],
+            cherB:[1,3,3,2,1,1,1,1,3,1,3,1,1,1,1,1,1,3,1,3,2],
+            tokA:[1,0,2,2,2,1,0,0,4,0,3,2,1,1,1,1,2,3,0,3,2],
+            tokB:[0,1,1,2,0,1,0,3,1,2,3,1,3,1,3,1,0,1,3,2,1],
+            tokC:[1,0,2,1,2,0,1,2,3,4,1,2,1,3,1,1,1,3,1,3,0],
+            tokD:[1,0,2,1,2,0,0,1,2,4,4,2,3,4,4,4,1,3,1,2,2],
+            tokE:[1,0,2,1,2,0,0,1,2,4,4,2,3,4,4,4,1,3,1,2,2]
+        },
+        bar_flag: {
+            hazure:[1,1,4,3,2,0,3,1,0,3,4,3,2,1,0,2,0,1,1,3,1],
+            normal_rep:[1,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            jac_rep:[1,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            rt_rep:[1,0,1,1,4,2,1,0,2,1,1,4,3,2,1,0,3,2,1,0,3],
+            bellA:[1,1,3,1,1,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2],
+            bellB:[1,1,2,4,0,1,2,4,3,0,2,3,4,0,1,1,2,4,1,1,1],
+            suikaA:[1,1,4,3,2,0,1,2,0,1,4,4,2,2,1,2,1,1,0,3,2],
+            suikaB:[1,1,4,3,2,0,1,2,0,1,4,4,2,2,1,2,1,1,0,3,2],
+            cherA:[1,3,3,2,4,4,3,2,3,1,2,1,3,4,3,2,2,1,0,3,2],
+            cherB:[1,3,3,2,4,4,3,2,3,1,2,1,3,4,3,2,2,1,0,3,2],
+            tokA:[1,0,3,4,3,2,1,1,0,0,4,3,2,1,0,1,2,3,1,1,0],
+            tokB:[1,1,3,4,0,1,4,4,3,1,2,1,3,4,0,1,2,1,3,2,2],
+            tokC:[1,0,3,4,3,2,1,1,0,0,4,3,2,1,0,1,2,3,1,1,0],
+            tokD:[1,0,3,0,0,0,1,0,1,2,4,3,2,0,1,2,0,1,1,1,0],
+            tokE:[1,1,3,4,0,1,4,4,3,1,2,1,3,4,0,1,2,1,3,2,2]
+        }
+    };
+
+    let currentState = 'hazure', currentCenter = 8;
+    let startY = 0;
+
+    function init() {
+        const frame = document.getElementById('reel-touch');
+        frame.addEventListener('touchstart', e => startY = e.touches[0].pageY);
+        frame.addEventListener('touchend', e => {
+            const diff = startY - e.changedTouches[0].pageY;
+            if (Math.abs(diff) > 20) moveReel(diff > 0 ? 1 : -1);
+        });
+        updateView();
+    }
+
+    function moveReel(dir) {
+        currentCenter += dir;
+        if (currentCenter > 21) currentCenter = 1;
+        if (currentCenter < 1) currentCenter = 21;
+        updateView();
+    }
+
+    function switchState(s) {
+        currentState = s;
+        document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s));
+        updateResults();
+    }
+
+    function updateView() {
+        const win = document.getElementById('reel-window');
+        win.innerHTML = '';
+        for (let i = 3; i >= -3; i--) {
+            let r = currentCenter + i;
+            while (r > 21) r -= 21;
+            while (r < 1) r += 21;
+            const d = document.createElement('div');
+            d.className = 'symbol';
+            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(21-r)*5}%"></div>`;
+            win.appendChild(d);
+        }
+        updateResults();
+    }
+
+    function updateResults() {
+        const list = document.getElementById('flag-list');
+        list.innerHTML = '';
+        const dataSet = GOD_DATA[currentState];
+        FLAG_DEFS.forEach(f => {
+            const table = dataSet[f.k];
+            const slips = [];
+            for (let n = 1; n <= 21; n++) {
+                // 画像データは「下段に押した絵柄」の番号（n）
+                const slip = table[n-1]; 
+                if (slip === null) continue;
+                
+                // 押し位置(下段n)からslip分滑った後の「中段」の位置を計算
+                // 下段nに停止 = 中段は n+1
+                let stopPos = (n + slip + 1);
+                while (stopPos > 21) stopPos -= 21;
+                
+                if (stopPos === currentCenter) {
+                    slips.push(`[${slip}]`);
+                }
+            }
+            if (slips.length > 0) {
+                const item = document.createElement('div');
+                item.className = `flag-item c-${f.c}`;
+                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${slips.join('')}</div>`;
+                list.appendChild(item);
+            }
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
