@@ -120,8 +120,6 @@
     let currentY = -210, currentState = 'hazure';
     const SYMBOL_H = 70;
     const win = document.getElementById('reel-window');
-    
-    // インデックス[3]=18番:リプ, [4]=17番:チェ, [5]=16番:赤7
     const SYMBOLS_LIST = ["X","ベル","リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","リプ","スイカ","X","ベル","リプ","チェリー","赤7","リプ","X","ベル","リプ"];
 
     function createReel() {
@@ -129,7 +127,6 @@
         for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) {
             const n = 21 - i;
             const d = document.createElement('div'); d.className = 'symbol';
-            // 元のUIを維持し、シンボル名を表示（画像がない環境への配慮）
             d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%; display:flex; align-items:center; justify-content:center; font-size:10px;">${SYMBOLS_LIST[i]}</div>`;
             win.appendChild(d);
         }}
@@ -152,25 +149,34 @@
         createReel(); update();
     }
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
+    
+    // 逆引きロジック
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
-        // 判定枠（140px = 2マス分下）にあるシンボルのインデックスを特定
-        const cIdx = Math.round(-currentY / SYMBOL_H);
-        let pushPos = 21 - (cIdx % 21);
-        if (pushPos <= 0) pushPos += 21;
+        // 赤枠の中段(あるいは基準位置)にある番号を特定
+        const offset = Math.round(-currentY / SYMBOL_H);
+        let targetStopPos = 21 - ((offset + 1) % 21); // 基準の停止位置(下段等の調整が必要ならここ)
+        if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
             const table = data[f.k]; if (!table) return;
-            // 押し位置に対するスベリを取得
-            let slip = table[21 - pushPos];
-            // 停止位置を計算
-            let stopPos = pushPos - slip;
-            if (stopPos <= 0) stopPos += 21;
-
-            const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
-            item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${slip}コマ → [${stopPos}]</div>`;
-            list.appendChild(item);
+            const res = [];
+            // 全21箇所の押し位置を全スキャンして、計算上の停止位置がtargetStopPosになるものを探す
+            for (let pushPos = 1; pushPos <= 21; pushPos++) {
+                let slip = table[21 - pushPos];
+                let calcStop = pushPos - slip;
+                if (calcStop <= 0) calcStop += 21;
+                
+                if (calcStop === targetStopPos) {
+                    res.push(`[${pushPos}:${slip}]`);
+                }
+            }
+            if (res.length > 0) {
+                const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
+                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${res.join('')}</div>`;
+                list.appendChild(item);
+            }
         });
     }
     init();
