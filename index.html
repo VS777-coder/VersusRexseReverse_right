@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Right Reel Logic [CSV 100% Sync]</title>
+    <title>Versus Revise - Right Reel Debugger</title>
     <style>
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
         body { background-color: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; user-select: none; }
-        .state-tabs { display: flex; width: 100%; background: #222; border: 1px solid #444; border-radius: 4px; margin-bottom: 5px; flex-shrink: 0; }
-        .state-tab { flex: 1; text-align: center; padding: 12px 2px; font-size: 10px; font-weight: bold; cursor: pointer; color: #aaa; }
-        .tab-hazure.active { background: #eee; color: #000; }
-        .tab-x_flag.active { background: #304ffe; color: #fff; }
-        .tab-seven_flag.active { background: #d50000; color: #fff; }
-        .tab-bar_flag.active { background: #000; color: #fff; border-bottom: 3px solid #777; }
+        
+        /* 状態タブの改善 */
+        .state-tabs { display: flex; width: 100%; gap: 2px; margin-bottom: 5px; flex-shrink: 0; }
+        .state-tab { 
+            flex: 1; text-align: center; padding: 10px 2px; font-size: 9px; font-weight: bold; 
+            cursor: pointer; color: #fff; border-radius: 4px; border: 1px solid #444;
+            background: rgba(255, 255, 255, 0.1); /* 非選択時も薄く色をつける */
+            transition: background 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tab-hazure.active { background: #eee !important; color: #000; }
+        .tab-x_flag.active { background: #304ffe !important; }
+        .tab-seven_flag.active { background: #d50000 !important; }
+        .tab-bar_flag.active { background: #444 !important; border-bottom: 3px solid #777; }
+
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
         .reel-frame { width: 130px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
         #reel-window { height: 100%; position: relative; will-change: transform; }
@@ -20,19 +29,27 @@
         .index-num { width: 35px; color: #ffd700; background: #222; text-align: center; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
         .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 35px); height: 210px; border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 10; box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.2); }
+        
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
-        .flag-item { display: flex; align-items: center; height: 38px; padding: 0 6px; border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); }
-        .flag-name { font-size: 11px; font-weight: bold; width: 65px; flex-shrink: 0; }
-        .flag-data { font-size: 14px; color: #fff; font-family: monospace; font-weight: bold; }
-        .c-rep { border-left-color: #00ccff; color: #00ccff; } .c-bell { border-left-color: #eeee00; color: #eeee00; } .c-suika { border-left-color: #00ff66; color: #00ff66; } .c-cher { border-left-color: #ff0066; color: #ff0066; } .c-hazure { border-left-color: #888; color: #ccc; } .c-tok { border-left-color: #cc33ff; color: #cc33ff; }
+        .flag-item { display: flex; align-items: center; height: 40px; padding: 0 8px; border-bottom: 1px solid #333; }
+        .flag-name { font-size: 11px; font-weight: bold; width: 85px; flex-shrink: 0; }
+        .flag-data { font-size: 16px; color: #fff; font-family: monospace; font-weight: bold; }
+
+        /* フラグ枠の色付け */
+        .c-rep { background: rgba(0, 204, 255, 0.15); color: #00ccff; } 
+        .c-bell { background: rgba(238, 238, 0, 0.15); color: #eeee00; } 
+        .c-suika { background: rgba(0, 255, 102, 0.15); color: #00ff66; } 
+        .c-cher { background: rgba(255, 0, 102, 0.15); color: #ff0066; } 
+        .c-hazure { background: rgba(255, 255, 255, 0.05); color: #ccc; } 
+        .c-tok { background: rgba(204, 51, 255, 0.15); color: #cc33ff; }
     </style>
 </head>
 <body>
     <div class="state-tabs">
-        <div id="tab-hazure" class="state-tab tab-hazure active" onclick="switchState('hazure')">未成立</div>
-        <div id="tab-x_flag" class="state-tab tab-x_flag" onclick="switchState('x_flag')">XBIG</div>
-        <div id="tab-seven_flag" class="state-tab tab-seven_flag" onclick="switchState('seven_flag')">7BIG</div>
-        <div id="tab-bar_flag" class="state-tab tab-bar_flag" onclick="switchState('bar_flag')">REG</div>
+        <div id="tab-hazure" class="state-tab tab-hazure active" onclick="switchState('hazure')">ボーナス未成立</div>
+        <div id="tab-x_flag" class="state-tab tab-x_flag" onclick="switchState('x_flag')">Ｘビッグ成立</div>
+        <div id="tab-seven_flag" class="state-tab tab-seven_flag" onclick="switchState('seven_flag')">７ビッグ成立</div>
+        <div id="tab-bar_flag" class="state-tab tab-bar_flag" onclick="switchState('bar_flag')">Reg成立</div>
     </div>
     <div class="main-content">
         <div id="reel-touch" class="reel-frame">
@@ -42,70 +59,70 @@
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // CSVから100%転記 (21番→1番)
+    // 提供された全CSVデータを100%反映
     const GOD_DATA = {
         hazure: {
-            hazure:     [0,0,2,2,0,1,2,3,4,0,1,1,3,0,0,1,2,0,1,2,1],
+            hazure: [0,0,2,2,0,1,2,3,4,0,1,1,3,0,0,1,2,0,1,2,1],
             normal_rep: [3,0,1,2,3,0,1,2,3,4,0,1,2,3,1,2,3,4,0,1,2],
-            jac_rep:    [0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3],
-            rt_rep:     [3,0,1,2,3,0,1,2,3,4,0,1,2,3,1,2,3,4,0,1,2],
-            bellA:      [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
-            bellB:      [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
-            suikaA:     [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
-            suikaB:     [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
-            cherA:      [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
-            cherB:      [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3]
+            jac_rep: [0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3],
+            rt_rep: [3,0,1,2,3,0,1,2,3,4,0,1,2,3,1,2,3,4,0,1,2],
+            bellA: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
+            bellB: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
+            suikaA: [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
+            suikaB: [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
+            cherA: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
+            cherB: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3]
         },
         x_flag: {
-            hazure:     [2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,1],
+            hazure: [2,3,4,3,2,1,4,3,1,0,3,0,1,3,2,1,0,2,2,2,3],
             normal_rep: [3,0,1,2,3,0,1,3,4,1,0,2,1,0,1,3,4,4,3,1,3],
-            jac_rep:    [0,1,2,3,0,1,2,1,4,4,2,2,1,1,1,3,4,4,3,1,3],
-            rt_rep:     [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
-            bellA:      [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
-            bellB:      [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
-            suikaA:     [2,3,4,3,2,1,4,3,1,2,3,0,4,2,2,1,1,0,1,0,1],
-            suikaB:     [2,3,4,3,2,1,4,3,1,2,3,0,4,2,2,1,1,0,1,0,1],
-            cherA:      [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
-            cherB:      [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
-            tokA:       [2,3,4,3,2,0,1,3,2,4,3,2,2,0,4,2,0,0,1,1,1],
-            tokB:       [2,3,4,3,1,0,3,1,2,0,3,1,1,4,4,4,4,4,2,2,1],
-            tokC:       [2,3,4,3,2,0,1,3,1,0,0,2,1,4,2,3,2,3,2,2,1],
-            tokD:       [2,3,0,1,1,2,3,1,1,0,1,4,3,3,3,3,3,3,2,2,1],
-            tokE:       [2,3,4,3,2,1,3,1,1,4,3,2,1,0,1,0,0,0,2,2,1]
+            jac_rep: [0,1,2,3,0,1,2,1,4,4,2,2,1,1,1,3,4,4,3,1,3],
+            rt_rep: [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
+            bellA: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            bellB: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            suikaA: [2,3,4,3,2,1,4,3,1,2,3,0,1,2,2,1,1,0,1,0,1],
+            suikaB: [2,3,4,3,2,1,4,3,1,2,3,0,1,2,2,1,1,0,1,0,1],
+            cherA: [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
+            cherB: [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
+            tokA: [2,3,4,3,2,0,1,3,2,4,3,2,2,0,4,2,0,0,1,1,1],
+            tokB: [2,3,4,3,1,0,3,1,2,0,3,1,1,4,4,4,4,4,2,2,1],
+            tokC: [2,3,4,3,2,0,1,3,1,0,0,2,1,4,2,3,2,3,2,2,1],
+            tokD: [2,3,0,1,1,2,3,1,1,0,1,4,3,3,3,3,3,3,2,2,1],
+            tokE: [2,3,4,3,2,1,3,1,1,4,3,2,1,0,1,0,0,0,2,2,1]
         },
         seven_flag: {
-            hazure:     [0,1,0,3,2,0,0,3,3,4,3,0,1,0,3,2,1,0,1,0,1],
-            normal_rep: [3,0,1,2,3,0,1,3,4,1,0,2,1,0,1,3,4,4,3,1,3],
-            jac_rep:    [0,1,2,3,0,1,2,1,4,4,2,2,1,1,1,3,4,4,3,1,3],
-            rt_rep:     [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
-            bellA:      [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
-            bellB:      [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
-            suikaA:     [0,3,0,3,2,1,4,3,1,4,3,0,4,2,2,1,1,0,1,0,1],
-            suikaB:     [0,3,0,3,2,1,4,3,1,4,3,0,4,2,2,1,1,0,1,0,1],
-            cherA:      [2,3,1,1,2,1,1,1,1,4,1,3,1,1,1,1,1,1,1,1,1],
-            cherB:      [2,3,1,1,2,1,1,1,1,4,1,3,1,1,1,1,1,1,1,1,1],
-            tokA:       [2,3,0,3,2,0,1,2,2,4,3,2,2,3,3,0,0,2,2,1,1],
-            tokB:       [1,2,2,3,1,0,3,1,3,0,3,1,1,1,1,4,4,3,4,1,1],
-            tokC:       [2,3,1,1,2,4,4,1,1,3,3,3,1,1,1,3,4,2,2,1,1],
-            tokD:       [2,3,0,3,2,4,4,0,0,1,1,2,1,3,3,3,1,1,1,1,1],
-            tokE:       [2,3,0,3,2,0,0,1,1,0,0,2,1,0,0,1,1,1,1,1,1]
+            hazure: [0,1,0,3,2,0,0,3,3,4,3,0,1,0,3,2,1,0,1,0,1],
+            normal_rep: [3,0,1,2,3,0,1,2,3,4,1,1,2,4,3,3,2,4,4,2,1],
+            jac_rep: [0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3],
+            rt_rep: [3,0,1,2,3,0,1,2,3,4,1,1,2,4,3,3,2,4,4,2,2],
+            bellA: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,1,1,2,3,0,1],
+            bellB: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,1,1,2,3,0,1],
+            suikaA: [0,3,0,3,2,1,4,0,4,0,3,4,1,2,1,0,1,2,4,2,1],
+            suikaB: [0,3,0,3,2,1,4,0,4,0,3,4,1,2,1,0,1,2,4,2,1],
+            cherA: [2,3,0,1,1,3,1,0,1,4,3,4,1,2,1,2,3,2,3,2,3],
+            cherB: [2,3,0,1,1,3,1,0,1,4,3,4,1,2,1,2,3,2,3,2,3],
+            tokA: [2,3,0,3,2,0,1,2,2,4,3,2,2,3,3,0,0,3,2,0,1],
+            tokB: [1,2,2,3,0,0,1,2,1,4,3,1,1,1,1,4,4,1,1,3,0],
+            tokC: [2,3,0,3,2,0,1,2,1,2,3,2,1,1,1,4,4,3,2,2,1],
+            tokD: [2,3,0,3,2,0,1,2,3,2,1,1,3,3,1,3,4,3,3,2,1],
+            tokE: [2,3,0,3,2,0,1,2,3,2,1,1,3,3,1,3,4,3,3,2,1]
         },
         bar_flag: {
-            hazure:     [2,3,0,1,0,1,2,0,1,2,3,2,1,0,1,0,2,1,0,0,1],
+            hazure: [2,3,0,1,0,1,2,0,1,2,3,2,1,0,1,0,2,1,0,0,1],
             normal_rep: [3,0,1,2,3,0,1,2,4,3,0,1,3,2,1,1,2,2,1,1,2],
-            jac_rep:    [3,0,1,2,3,0,1,2,4,3,0,1,3,2,1,1,2,2,1,1,2],
-            rt_rep:     [3,0,1,2,3,0,1,2,4,3,0,1,3,2,1,1,2,2,1,1,2],
-            bellA:      [2,3,0,1,2,3,4,1,3,2,3,4,1,1,1,3,2,1,0,0,1],
-            bellB:      [2,3,0,1,2,3,4,1,3,2,3,4,1,1,1,3,2,1,0,0,1],
-            suikaA:     [2,3,0,1,0,3,2,0,1,2,3,2,2,0,0,3,2,0,0,0,1],
-            suikaB:     [2,3,0,1,0,3,2,0,1,2,3,2,2,0,0,3,2,0,0,0,1],
-            cherA:      [2,3,0,1,2,3,1,4,4,0,1,2,3,2,2,3,2,1,1,2,3],
-            cherB:      [2,3,0,1,2,3,1,4,4,0,1,2,3,2,2,3,2,1,1,2,3],
-            tokA:       [0,1,2,3,0,1,0,0,1,2,4,0,3,1,0,1,2,2,2,2,1],
-            tokB:       [0,1,2,3,0,1,3,3,1,2,3,3,3,3,3,3,3,3,2,2,1],
-            tokC:       [0,1,2,3,0,1,3,3,1,2,3,3,3,3,3,3,3,3,2,2,1],
-            tokD:       [0,1,2,1,0,1,3,3,0,0,1,0,3,3,3,3,3,3,2,2,1],
-            tokE:       [0,1,2,3,0,1,0,1,3,2,4,2,3,3,3,3,3,3,2,2,1]
+            jac_rep: [3,0,1,2,3,0,1,2,4,3,0,1,3,2,1,1,2,2,1,1,2],
+            rt_rep: [3,0,1,2,3,0,1,2,4,3,0,1,3,2,1,1,2,2,1,1,2],
+            bellA: [2,3,0,1,2,3,4,1,3,2,3,4,1,1,1,3,2,1,0,0,1],
+            bellB: [2,3,0,1,2,3,4,1,3,2,3,4,1,1,1,3,2,1,0,0,1],
+            suikaA: [2,3,0,1,0,3,2,0,1,2,3,2,2,0,0,3,2,0,0,0,1],
+            suikaB: [2,3,0,1,0,3,2,0,1,2,3,2,2,0,0,3,2,0,0,0,1],
+            cherA: [2,3,0,1,2,3,1,4,4,0,1,2,3,2,2,3,2,1,1,2,3],
+            cherB: [2,3,0,1,2,3,1,4,4,0,1,2,3,2,2,3,2,1,1,2,3],
+            tokA: [0,1,2,3,0,1,0,0,1,2,4,0,3,1,0,1,2,2,2,2,1],
+            tokB: [0,1,2,3,0,1,3,3,1,2,3,3,3,3,3,3,3,3,2,2,1],
+            tokC: [0,1,2,3,0,1,3,3,1,2,3,3,3,3,3,3,3,3,2,2,1],
+            tokD: [0,1,2,1,0,1,3,3,0,0,1,0,3,3,3,3,3,3,2,2,1],
+            tokE: [0,1,2,3,0,1,0,1,3,2,4,2,3,3,3,3,3,3,2,2,1]
         }
     };
 
@@ -119,59 +136,96 @@
         { k: "tokC", n: "特役C", c: "tok" }, { k: "tokD", n: "特役D", c: "tok" }, { k: "tokE", n: "特役E", c: "tok" }
     ];
 
+    let currentState = 'hazure';
     let currentY = -(21 - 18) * 70;
     const win = document.getElementById('reel-window');
+    
     function init() {
         const frame = document.getElementById('reel-touch');
         let startTouchY = 0, lastY = 0, isDragging = false;
+        
         const handleStart = (y) => { startTouchY = y; lastY = currentY; isDragging = true; };
         const handleMove = (y) => { if(!isDragging) return; currentY = lastY + (y - startTouchY); renderReel(); };
-        const handleEnd = () => { isDragging = false; currentY = Math.round(currentY / 70) * 70; renderReel(); updateResults(); };
+        const handleEnd = () => { 
+            if(!isDragging) return;
+            isDragging = false; 
+            currentY = Math.round(currentY / 70) * 70; 
+            renderReel(); 
+            updateResults(); 
+        };
+
         frame.addEventListener('touchstart', e => handleStart(e.touches[0].pageY));
         frame.addEventListener('touchmove', e => handleMove(e.touches[0].pageY));
         frame.addEventListener('touchend', handleEnd);
         frame.addEventListener('mousedown', e => { e.preventDefault(); handleStart(e.pageY); });
         window.addEventListener('mousemove', e => handleMove(e.pageY));
         window.addEventListener('mouseup', handleEnd);
-        renderReel(); updateResults();
+        
+        renderReel();
+        updateResults();
     }
+
     function renderReel() {
         const total = 21 * 70;
-        while (currentY > 0) currentY -= total; while (currentY < -total) currentY += total;
+        while (currentY > 0) currentY -= total;
+        while (currentY < -total) currentY += total;
+        
         win.innerHTML = '';
         for (let i = -2; i <= 8; i++) {
             let posIdx = Math.floor(-currentY / 70) + i;
-            let r = 21 - (posIdx % 21); if (r > 21) r -= 21; if (r < 1) r += 21;
-            const d = document.createElement('div'); d.className = 'symbol'; d.style.position = 'absolute'; d.style.top = `${(posIdx * 70) + currentY}px`; d.style.width = '100%';
+            let r = 21 - (posIdx % 21);
+            if (r > 21) r -= 21; if (r < 1) r += 21;
+
+            const d = document.createElement('div');
+            d.className = 'symbol';
+            d.style.position = 'absolute';
+            d.style.top = `${(posIdx * 70) + currentY}px`;
+            d.style.width = '100%';
             d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(21-r)*5}%"></div>`;
             win.appendChild(d);
         }
     }
-    let currentState = 'hazure';
+
     function switchState(s) {
-        currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); updateResults();
+        currentState = s;
+        // タブのアクティブ表示切り替え
+        document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s));
+        // リール位置(currentY)は保持したまま結果だけ更新
+        updateResults();
     }
+
     function updateResults() {
-        const list = document.getElementById('flag-list'); list.innerHTML = '';
+        const list = document.getElementById('flag-list');
+        list.innerHTML = '';
+        
+        // ガイド位置（中段）から図柄番号を特定
         let centerIdx = Math.round(-currentY / 70) + 3;
-        let r_center = 21 - (centerIdx % 21); if (r_center > 21) r_center -= 21; if (r_center < 1) r_center += 21;
-        let r_bottom = r_center - 1; if (r_bottom < 1) r_bottom = 21;
+        let r_center = 21 - (centerIdx % 21);
+        if (r_center > 21) r_center -= 21; if (r_center < 1) r_center += 21;
+        
+        let r_bottom = r_center - 1;
+        if (r_bottom < 1) r_bottom = 21;
+
         const dataSet = GOD_DATA[currentState];
         FLAG_DEFS.forEach(f => {
-            const table = dataSet[f.k]; if (!table) return;
+            const table = dataSet[f.k];
+            if (!table) return;
             const matches = [];
             for (let n = 1; n <= 21; n++) {
                 const slip = table[21 - n]; 
-                let stop = n + slip; while (stop > 21) stop -= 21;
+                let stop = n + slip;
+                while (stop > 21) stop -= 21;
                 if (stop === r_bottom) matches.push(`[${slip}]`);
             }
             if (matches.length > 0) {
-                const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
+                const item = document.createElement('div');
+                item.className = `flag-item c-${f.c}`;
                 item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${matches.join(' ')}</div>`;
                 list.appendChild(item);
             }
         });
     }
+
     init();
 </script>
 </body>
