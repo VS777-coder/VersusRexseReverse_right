@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Fixed Build]</title>
+    <title>Versus Revise - Absolute Data Checker [Final Debug Build]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
@@ -13,19 +13,20 @@
         .tab-x_flag { background: rgba(48, 79, 254, 0.15); color: #304ffe; }
         .tab-seven_flag { background: rgba(213, 0, 0, 0.15); color: #d50000; }
         .tab-bar_flag { background: rgba(150, 150, 150, 0.15); color: #777; }
-        .active { border-color: #fff; background: rgba(255,255,255,0.2) !important; color: #fff !important; }
-        .main-content { display: flex; flex: 1; overflow: hidden; gap: 4px; }
+        .active { border-color: #fff !important; background: rgba(255,255,255,0.2) !important; color: #fff !important; box-shadow: 0 0 5px #fff; }
+        .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
         .reel-frame { width: 110px; height: 100%; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
         #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; align-items: center; }
         .index-num { width: 30px; color: #ffd700; background: #222; text-align: center; font-size: 14px; font-weight: bold; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
-        .symbol-name { flex: 1; text-align: center; font-size: 16px; font-weight: bold; color: #eee; }
-        .center-guide { position: absolute; top: 70px; right: 0; width: 100%; height: 70px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.1); pointer-events: none; z-index: 100; }
-        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
-        .flag-item { display: flex; align-items: center; height: 34px; padding: 0 8px; border-bottom: 1px solid #222; font-size: 12px; }
-        .flag-name { width: 70px; font-weight: bold; color: #aaa; }
-        .flag-slip { flex: 1; text-align: center; font-size: 18px; font-weight: bold; color: #ffd700; }
-        .flag-stop { width: 60px; text-align: right; color: #888; font-family: monospace; }
+        .symbol-name { flex: 1; text-align: center; font-size: 15px; font-weight: bold; color: #eee; }
+        .center-guide { position: absolute; top: 0px; right: 0; width: 100%; height: 70px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.1); pointer-events: none; z-index: 100; }
+        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .flag-item { display: flex; align-items: center; height: 32px; padding: 0 8px; border-bottom: 1px solid #222; font-size: 11px; }
+        .flag-name { width: 60px; font-weight: bold; color: #aaa; }
+        .flag-slip { flex: 1; text-align: center; font-size: 16px; font-weight: bold; color: #ffd700; }
+        .flag-stop { width: 55px; text-align: right; color: #888; font-family: monospace; }
+        .c-rep { color: #4fc3f7; } .c-bell { color: #fff176; } .c-suika { color: #81c784; } .c-cher { color: #e57373; } .c-tok { color: #ce93d8; }
     </style>
 </head>
 <body>
@@ -43,95 +44,147 @@
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // 実機配列（左リール）: 21番から1番の順
-    const SYMBOLS = [
-        "三連X(上)","三連X(中)","三連X(下)","リプレイ","ベル","スイカ","赤7","ベル","リプレイ","スイカ","チェリー","ベル","リプレイ","スイカ","赤7","ベル","リプレイ","スイカ","X","ベル","リプレイ"
+    // ユーザー指定配列（21番〜1番）
+    // 18:リプ, 17:チェ, 16:赤7 を含む正しい並び
+    const REEL_DATA = [
+        "X", "ベル", "リプレイ", "ベル", "スイカ", "リプレイ", "ベル", "スイカ", "赤7", "ベル", 
+        "リプレイ", "スイカ", "X", "ベル", "リプレイ", "チェリー", "赤7", "リプレイ", "X", "ベル", "リプレイ"
     ];
-    // ※ 18:リプ, 17:スイカ(実機準拠ならここがチェリー), 16:X(実機準拠ならここが赤7)
-    // ユーザー様指定の「18リプ, 17チェ, 16赤7」に配列を強制固定します
-    const CUSTOM_SYMBOLS = [
-        "21:三連X","20:三連X","19:三連X","18:リプレイ","17:チェリー","16:赤7","15:ベル","14:リプレイ","13:スイカ","12:X","11:ベル","10:リプレイ","9:スイカ","8:赤7","7:ベル","6:リプレイ","5:スイカ","4:チェリー","3:ベル","2:リプレイ","1:スイカ"
-    ];
-    // 上記は例です。以下、ご提示の「18リプ, 17チェ, 16赤7」を含む正しい順序で定義
-    const FINAL_SYMBOLS = ["X","ベル","リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","リプ","スイカ","X","ベル","リプ","チェリー","赤7","リプレイ","X","ベル","リプ"]; 
-    // インデックス[0]=21番, [1]=20番... [3]=18番(リプ), [4]=17番(チェ), [5]=16番(赤7)
-    const REEL = ["X","ベル","リプレイ","ベル","スイカ","リプレイ","ベル","スイカ","赤7","ベル","リプレイ","スイカ","X","ベル","リプレイ","チェリー","赤7","リプレイ","X","ベル","リプレイ"];
 
     const FLAGS = [
-        {k:"hazure",n:"ハズレ"},{k:"normal_rep",n:"通リプ"},{k:"jac_rep",n:"JACリ"},{k:"rt_rep",n:"RTリ"},
-        {k:"bellA",n:"ベルA"},{k:"bellB",n:"ベルB"},{k:"suikaA",n:"スイA"},{k:"suikaB",n:"スイB"},
-        {k:"cherA",n:"チェA"},{k:"cherB",n:"チェB"},{k:"tokA",n:"特A"},{k:"tokB",n:"特B"},
-        {k:"tokC",n:"特C"},{k:"tokD",n:"特D"},{k:"tokE",n:"特E"}
+        {k:"hazure",n:"ハズレ",c:""},{k:"normal_rep",n:"通リプ",c:"c-rep"},{k:"jac_rep",n:"JACリ",c:"c-rep"},{k:"rt_rep",n:"RTリ",c:"c-rep"},
+        {k:"bellA",n:"ベルA",c:"c-bell"},{k:"bellB",n:"ベルB",c:"c-bell"},{k:"suikaA",n:"スイA",c:"c-suika"},{k:"suikaB",n:"スイB",c:"c-suika"},
+        {k:"cherA",n:"チェA",c:"c-cher"},{k:"cherB",n:"チェB",c:"c-cher"},{k:"tokA",n:"特A",c:"c-tok"},{k:"tokB",n:"特B",c:"c-tok"},
+        {k:"tokC",n:"特C",c:"c-tok"},{k:"tokD",n:"特D",c:"c-tok"},{k:"tokE",n:"特E",c:"c-tok"}
     ];
 
-    const GOD_DATA = { /* 先ほど流し込んだ神データをそのまま保持 */ 
+    const GOD_DATA = {
         hazure: {
             hazure: [0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3],
-            normal_rep: [3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,0,1,0,3,3,3], // データ例
-            // ... (他データ省略、実際には全データが入ります)
+            normal_rep: [3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
+            jac_rep: [0,1,2,1,0,1,2,3,4,0,1,2,2,1,2,3,4,0,1,2,3],
+            rt_rep: [3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
+            bellA: [2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1],
+            bellB: [2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1],
+            suikaA: [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
+            suikaB: [0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1],
+            cherA: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
+            cherB: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3]
         },
-        // ... (x_flag, seven_flag, bar_flag も同様)
+        x_flag: {
+            hazure: [2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3],
+            normal_rep: [3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,2,3,4,0,1,2],
+            jac_rep: [0,1,2,1,0,0,4,4,2,2,2,0,0,2,2,3,4,4,3,1,3],
+            rt_rep: [3,0,1,0,3,3,1,3,1,1,1,1,1,1,1,2,3,4,0,1,2],
+            bellA: [2,3,0,1,2,2,4,1,1,0,3,1,1,2,3,0,1,1,1,0,1],
+            bellB: [2,3,0,1,2,2,4,1,1,0,3,1,1,2,3,0,1,1,1,0,1],
+            suikaA: [2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3],
+            suikaB: [2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3],
+            cherA: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,1,3,2,3],
+            cherB: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,1,3,2,3],
+            tokA: [2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1],
+            tokB: [2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1],
+            tokC: [2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1],
+            tokD: [2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1],
+            tokE: [2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1]
+        },
+        seven_flag: {
+            hazure: [0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1],
+            normal_rep: [3,0,1,0,3,3,3,3,1,2,3,4,2,0,1,2,3,4,0,1,2],
+            jac_rep: [0,1,2,1,0,0,1,0,1,2,3,4,0,1,2,3,4,0,1,2,3],
+            rt_rep: [3,0,1,0,3,3,3,3,1,2,3,4,2,0,1,2,3,4,0,1,2],
+            bellA: [2,3,0,1,2,2,0,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
+            bellB: [2,3,0,1,2,2,0,0,1,2,3,0,1,2,3,0,1,2,3,0,1],
+            suikaA: [0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
+            suikaB: [0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
+            cherA: [2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3],
+            cherB: [2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3],
+            tokA: [2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,2,0,1],
+            tokB: [1,2,2,3,0,0,1,0,1,2,3,4,3,2,3,4,3,1,1,3,0],
+            tokC: [2,3,0,3,2,0,1,0,1,2,3,4,2,2,4,4,2,2,2,2,1],
+            tokD: [2,3,0,3,2,0,1,0,3,2,1,0,2,2,4,4,1,3,3,2,1],
+            tokE: [2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,3,2,1]
+        },
+        bar_flag: {
+            hazure: [2,3,0,1,0,1,2,0,1,2,3,4,0,1,0,3,2,3,4,0,1],
+            normal_rep: [3,0,0,0,3,3,2,2,1,2,3,4,2,0,1,2,3,4,0,1,2],
+            jac_rep: [3,0,0,0,3,3,1,0,1,2,3,4,1,1,1,1,3,4,0,1,2],
+            rt_rep: [3,0,0,0,3,3,1,0,1,2,3,4,1,1,0,2,3,4,0,1,2],
+            bellA: [2,3,0,1,2,2,4,0,1,2,3,0,1,2,1,0,1,2,3,0,1],
+            bellB: [2,3,0,1,2,2,4,0,1,2,3,0,1,2,1,0,1,2,3,0,1],
+            suikaA: [2,3,0,1,0,1,2,0,1,2,3,4,0,1,0,3,2,3,4,0,1],
+            suikaB: [2,3,0,1,0,1,2,0,1,2,0,4,1,1,0,3,2,3,4,0,1],
+            cherA: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
+            cherB: [2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
+            tokA: [0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1],
+            tokB: [0,1,2,3,0,1,1,0,1,2,3,4,3,3,4,4,2,3,4,2,1],
+            tokC: [0,1,2,3,0,1,1,0,1,2,3,4,3,3,4,4,2,3,4,2,1],
+            tokD: [0,1,2,3,0,1,1,0,1,0,1,2,3,3,4,4,2,3,4,2,1],
+            tokE: [0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1]
+        }
     };
-    // ※ 実際のGOD_DATAは、ユーザー様から頂いた全数値をここに完全移植した状態になります
 
-    let currentY = -70 * 21; 
-    let currentState = 'hazure';
+    let currentY = -70 * 21, currentState = 'hazure';
     const SYMBOL_H = 70;
     const win = document.getElementById('reel-window');
 
     function createReel() {
         win.innerHTML = '';
-        const displayReel = [...REEL, ...REEL, ...REEL];
-        displayReel.forEach((s, i) => {
-            const num = 21 - (i % 21);
-            const d = document.createElement('div'); d.className = 'symbol';
-            d.innerHTML = `<div class="index-num">${num}</div><div class="symbol-name">${s}</div>`;
-            win.appendChild(d);
-        });
+        for (let l = 0; l < 3; l++) {
+            REEL_DATA.forEach((s, i) => {
+                const n = 21 - i;
+                const d = document.createElement('div'); d.className = 'symbol';
+                d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-name">${s}</div>`;
+                win.appendChild(d);
+            });
+        }
         applyScroll();
     }
 
     function applyScroll() {
-        win.style.transform = `translate3d(0, ${currentY}px, 0)`;
+        const h = 21 * SYMBOL_H;
+        if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
+        win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
 
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
-        // 赤枠（center-guide）の位置にある番号を特定
-        // currentYが0の時、一番上の21番が枠の1つ上にある状態
-        let offset = Math.round(-currentY / SYMBOL_H) + 1;
+        // 赤いガイド枠（最上段）に位置するリール番号を特定
+        const offset = Math.round(-currentY / SYMBOL_H);
         let pushPos = 21 - (offset % 21);
-        if (pushPos <= 0) pushPos += 21;
+        if (pushPos <= 0) pushPos += 21; if (pushPos > 21) pushPos -= 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
             const table = data[f.k];
-            if (!table) return;
+            if (!table) return; // HAZURE時にTOKを表示しない
+            
             const slip = table[21 - pushPos];
             let stopPos = pushPos - slip;
             if (stopPos <= 0) stopPos += 21;
 
             const item = document.createElement('div'); item.className = 'flag-item';
-            item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-slip">${slip}</div><div class="flag-stop">${stopPos}番停</div>`;
+            item.innerHTML = `<div class="flag-name ${f.c}">${f.n}</div><div class="flag-slip">${slip}</div><div class="flag-stop">${stopPos}番</div>`;
             list.appendChild(item);
         });
     }
 
-    // タッチ制御ロジック
     let startY = 0, initialY = 0, isDrag = false;
     const area = document.getElementById('reel-touch-area');
-    area.addEventListener('touchstart', e => { isDrag = true; startY = e.touches[0].pageY; initialY = currentY; });
-    window.addEventListener('touchmove', e => { if(!isDrag) return; currentY = initialY + (e.touches[0].pageY - startY); applyScroll(); update(); });
-    window.addEventListener('touchend', () => { if(!isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
-    
+    area.addEventListener('touchstart', e => { isDrag = true; startY = e.touches[0].pageY; initialY = currentY; e.preventDefault(); }, {passive: false});
+    window.addEventListener('touchmove', e => { if(!isDrag) return; currentY = initialY + (e.touches[0].pageY - startY); applyScroll(); update(); e.preventDefault(); }, {passive: false});
+    window.addEventListener('touchend', () => { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); });
+    area.addEventListener('mousedown', e => { isDrag = true; startY = e.pageY; initialY = currentY; });
+    window.addEventListener('mousemove', e => { if(!isDrag) return; currentY = initialY + (e.pageY - startY); applyScroll(); update(); });
+    window.addEventListener('mouseup', () => { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); });
+
     function switchState(s) { 
         currentState = s; 
         document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); 
         update(); 
     }
 
-    createReel();
-    update();
+    createReel(); update();
 </script>
 </body>
 </html>
