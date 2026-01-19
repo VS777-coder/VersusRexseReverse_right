@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Fixed Build]</title>
+    <title>Versus Revise - Absolute Data Checker [Final Build]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
@@ -25,9 +25,9 @@
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
         .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 28px); height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .flag-item { display: flex; align-items: center; height: 34px; padding: 0 4px; border-bottom: 1px solid #222; }
-        .flag-name { font-size: 9px; font-weight: bold; width: 55px; flex-shrink: 0; }
-        .flag-data { font-size: 11px; color: #fff; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: -1.5px; white-space: nowrap; }
+        .flag-item { display: flex; align-items: center; height: 40px; padding: 0 4px; border-bottom: 1px solid #222; }
+        .flag-name { font-size: 10px; font-weight: bold; width: 55px; flex-shrink: 0; }
+        .flag-data { font-size: 15px; color: #fff; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: -0.5px; white-space: nowrap; }
         .c-rep { background: rgba(0, 204, 255, 0.1); color: #00ccff; } .c-bell { background: rgba(238, 238, 0, 0.1); color: #eeee00; } .c-suika { background: rgba(0, 255, 102, 0.1); color: #00ff66; } .c-cher { background: rgba(255, 0, 102, 0.1); color: #ff0066; } .c-hazure { background: rgba(255, 255, 255, 0.05); color: #ccc; } .c-tok { background: rgba(204, 51, 255, 0.1); color: #cc33ff; }
     </style>
 </head>
@@ -43,7 +43,7 @@
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // 正規画像に基づいた右リール配列 (21番〜1番)
+    // 右リール正規配列 (画像に基づき21番〜1番の順で定義)
     const SYMBOLS_LIST = [
         "青リプ","ベル","スイカ","リプ","チェリー","赤7","ベル","スイカ","青リプ","ベル","リプ","青リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","スイカ","青リプ"
     ];
@@ -113,7 +113,6 @@
             tokE: [0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1]
         }
     };
-
     const FLAGS = [
         { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "通リプ", c: "rep" },
         { k: "jac_rep", n: "JACリ", c: "rep" }, { k: "rt_rep", n: "RTリ", c: "rep" },
@@ -133,18 +132,18 @@
         for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) {
             const n = 21 - i;
             const d = document.createElement('div'); d.className = 'symbol';
-            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%; display:flex; align-items:center; justify-content:center; font-size:10px;">${SYMBOLS_LIST[i]}</div>`;
+            // 文字を大きくし、背景画像(reel.png)のオフセットを右リール配列に同期
+            const bgPos = (21 - n) * 5; 
+            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${bgPos}%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:rgba(255,255,255,0.7); text-shadow:1px 1px 2px #000;">${SYMBOLS_LIST[i]}</div>`;
             win.appendChild(d);
         }}
         applyScroll();
     }
-
     function applyScroll() {
         const h = 21 * SYMBOL_H;
         if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
         win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
-
     function init() {
         const area = document.getElementById('reel-touch-area');
         let startY = 0, initialY = 0, isDrag = false;
@@ -156,13 +155,13 @@
         window.addEventListener('mouseup', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
         createReel(); update();
     }
-
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
     
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
         const offset = Math.round(-currentY / SYMBOL_H);
-        let targetStopPos = 21 - ((offset + 2) % 21); // 赤枠中段(あるいは基準位置)
+        // ガイド枠内の中段（基準位置）を計算。見た目と論理を同期。
+        let targetStopPos = 21 - ((offset + 1) % 21); 
         if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
@@ -180,7 +179,8 @@
             }
             if (res.length > 0) {
                 const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
-                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${res.join('')}</div>`;
+                // フォントサイズを大きくし、逆引き情報を強調
+                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${res.join(' ')}</div>`;
                 list.appendChild(item);
             }
         });
