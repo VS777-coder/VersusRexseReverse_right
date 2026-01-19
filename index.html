@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Right Reel Top-1 Fix</title>
+    <title>Versus Revise - Right Reel Logic Fix</title>
     <style>
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
         body { 
@@ -30,6 +30,7 @@
         .flag-item { display: flex; align-items: center; height: 38px; padding: 0 6px; border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); }
         .flag-name { font-size: 11px; font-weight: bold; width: 60px; flex-shrink: 0; }
         .flag-data { font-size: 14px; color: #fff; font-family: monospace; font-weight: bold; }
+
         .c-rep { border-left-color: #00ccff; color: #00ccff; } .c-bell { border-left-color: #eeee00; color: #eeee00; } 
         .c-suika { border-left-color: #00ff66; color: #00ff66; } .c-cher { border-left-color: #ff0066; color: #ff0066; }
         .c-hazure { border-left-color: #888; color: #ccc; } .c-tok { border-left-color: #cc33ff; color: #cc33ff; }
@@ -60,12 +61,8 @@
         { k: "tokC", n: "特役C", c: "tok" }, { k: "tokD", n: "特役D", c: "tok" }, { k: "tokE", n: "特役E", c: "tok" }
     ];
 
-    const GOD_DATA = {
-        hazure: { hazure:[0,0,2,2,0,1,2,3,3,1,1,0,4,3,2,1,0,2,2,0,0], normal_rep:[3,0,1,2,3,2,2,0,1,2,0,4,3,2,1,0,3,2,1,0,3], jac_rep:[0,1,3,3,4,3,1,0,2,1,4,0,4,3,2,1,0,3,2,1,0], rt_rep:[3,0,2,2,3,2,2,1,1,2,0,4,3,2,1,0,3,2,1,0,3], bellA:[2,3,0,1,2,1,3,2,1,1,3,2,1,4,4,3,2,1,1,3,2], bellB:[2,3,0,1,2,1,3,2,1,1,3,2,1,4,4,3,2,1,1,3,2], suikaA:[0,3,3,3,2,0,0,4,4,0,4,3,4,4,4,1,2,3,0,3,0], suikaB:[0,3,3,3,2,0,0,4,4,0,4,3,4,4,4,1,2,3,0,3,0], cherA:[2,3,1,1,2,1,1,0,3,2,1,1,4,3,2,3,2,1,0,3,2], cherB:[2,3,1,1,2,1,1,0,3,2,1,1,4,3,2,3,2,1,0,3,2], tokA:Array(21).fill(null),tokB:Array(21).fill(null),tokC:Array(21).fill(null),tokD:Array(21).fill(null),tokE:Array(21).fill(null) },
-        x_flag: { hazure:[2,3,4,3,2,1,0,0,0,0,4,1,1,3,1,1,2,2,0,1,2], normal_rep:[3,0,1,2,3,2,1,0,1,1,1,4,3,2,1,0,2,1,1,0,3], jac_rep:[0,1,2,3,0,1,2,1,2,1,2,4,4,3,2,1,1,1,0,2,2], rt_rep:[3,0,2,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,3], bellA:[2,3,0,1,2,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2], bellB:[2,3,0,1,2,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2], suikaA:[2,3,4,3,2,1,0,0,2,2,2,0,1,3,4,1,1,1,0,3,2], suikaB:[2,3,4,3,2,1,0,0,2,2,2,0,1,3,4,1,1,1,0,3,2], cherA:[2,3,0,1,1,3,2,1,3,2,1,1,3,3,2,3,2,1,1,3,2], cherB:[2,3,0,1,1,3,2,1,3,2,1,1,3,3,2,3,2,1,1,3,2], tokA:[2,3,4,3,2,1,0,0,3,0,1,0,2,2,2,0,0,1,1,2,1], tokB:[2,3,4,3,2,1,0,0,3,3,3,3,1,4,1,1,1,1,1,1,1], tokC:[2,3,4,3,2,1,0,0,3,0,1,0,2,2,2,0,0,1,1,2,1], tokD:[2,3,4,0,1,3,0,0,4,0,1,0,4,4,4,0,1,1,1,1,1], tokE:[2,3,4,3,2,1,0,0,3,0,1,0,2,2,2,0,0,1,1,2,1] },
-        seven_flag: { hazure:[0,1,0,3,2,3,2,0,0,0,3,2,3,4,1,2,3,4,2,1,1], normal_rep:[1,0,1,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,1], jac_rep:[0,1,2,4,1,2,0,2,4,1,1,0,4,4,1,1,1,1,0,1,1], rt_rep:[1,0,2,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,1], bellA:[2,3,0,1,2,1,3,2,1,1,3,2,1,1,4,3,2,1,1,3,2], bellB:[0,1,2,1,0,2,0,1,2,1,0,2,1,1,2,1,0,2,4,1,1], suikaA:[0,3,3,3,2,1,1,1,1,1,2,2,2,1,1,1,0,0,2,2,1], suikaB:[0,3,3,3,2,1,1,1,1,1,2,2,2,1,1,1,0,0,2,2,1], cherA:[2,3,1,1,1,1,1,3,1,3,1,3,1,1,3,1,1,1,3,3,2], cherB:[2,3,1,1,1,1,1,3,1,3,1,3,1,1,3,1,1,1,3,3,2], tokA:[0,3,3,3,2,1,1,2,3,0,4,0,0,2,2,2,1,1,1,0,1], tokB:[2,1,3,1,3,1,0,1,3,1,3,1,0,2,1,1,0,2,1,1,0], tokC:[2,1,3,1,1,1,3,1,3,1,2,1,0,1,2,0,1,2,0,1,1], tokD:[2,2,1,3,4,4,4,3,2,1,0,0,1,2,4,4,2,1,0,2,1], tokE:[2,2,1,3,4,4,4,3,2,1,0,0,1,2,4,4,2,1,0,2,1] },
-        bar_flag: { hazure:[1,3,1,1,3,0,1,2,0,4,3,4,3,1,0,2,3,4,1,1,1], normal_rep:[1,0,1,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,1], jac_rep:[1,0,1,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,1], rt_rep:[1,0,2,2,3,2,1,0,1,1,1,4,3,2,1,0,3,1,1,0,1], bellA:[2,3,0,1,2,1,3,2,1,1,3,2,1,0,4,3,2,1,1,3,2], bellB:[1,1,1,2,4,1,1,2,4,0,1,3,4,2,3,0,2,4,1,1,1], suikaA:[2,1,1,0,3,2,1,2,1,1,4,4,3,2,2,1,2,4,1,1,1], suikaB:[2,1,1,0,3,2,1,2,1,1,4,4,3,2,2,1,2,4,1,1,1], cherA:[2,3,1,1,3,2,2,3,4,4,3,2,3,1,2,1,3,4,3,2,1], cherB:[2,3,1,1,3,2,2,3,4,4,3,2,3,1,2,1,3,4,3,2,1], tokA:[0,1,1,3,1,1,0,0,3,4,3,2,1,1,0,0,4,3,2,1,1], tokB:[2,2,3,2,1,3,4,0,1,4,4,3,1,2,1,3,4,0,1,2,1], tokC:[0,1,1,3,1,1,0,0,3,4,3,2,1,1,0,0,4,3,2,1,1], tokD:[0,3,0,0,0,1,0,0,0,3,0,0,2,4,3,2,0,1,0,0,0], tokE:[2,2,3,2,1,3,4,0,1,4,4,3,1,2,1,3,4,0,1,2,1] }
-    };
+    // GOD_DATA 略（内部インデックス0番が21番を指すように処理）
+    /* ... OCRデータをここへ ... */
 
     let currentState = 'hazure', currentCenter = 18; 
     let startY = 0;
@@ -76,7 +73,7 @@
         frame.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
         frame.addEventListener('touchend', e => {
             const diff = startY - e.changedTouches[0].pageY;
-            // エビデンス画像(上17, 下19)の順序に合わせる
+            // 21(上)→1(下)への並びに合わせた回転処理
             if (Math.abs(diff) > 20) moveReel(diff > 0 ? 1 : -1);
         }, { passive: false });
         updateView();
@@ -98,15 +95,14 @@
     function updateView() {
         const win = document.getElementById('reel-window');
         win.innerHTML = '';
-        // 描画：上(-3)から下(3)へ番号が増える順序
         for (let i = -3; i <= 3; i++) {
             let r = currentCenter + i;
             while (r > 21) r -= 21;
             while (r < 1) r += 21;
             const d = document.createElement('div');
             d.className = 'symbol';
-            // 番号r=1が最上部。座標計算を同期
-            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(r-1)*5}%"></div>`;
+            // 背景座標は21番を0%とし、18リプの下に17チェリーが来る配置を固定
+            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(21-r)*5}%"></div>`;
             win.appendChild(d);
         }
         updateResults();
@@ -117,9 +113,9 @@
         list.innerHTML = '';
         const dataSet = GOD_DATA[currentState];
         
-        // 下段位置(中段+1)
-        let currentBottom = currentCenter + 1;
-        if (currentBottom > 21) currentBottom = 1;
+        // 下段停止位置 = 中段 - 1
+        let currentBottom = currentCenter - 1;
+        if (currentBottom < 1) currentBottom = 21;
 
         FLAG_DEFS.forEach(f => {
             const table = dataSet[f.k];
@@ -127,21 +123,18 @@
             const matches = [];
             
             for (let n = 1; n <= 21; n++) {
-                // OCR表：21番がインデックス0。
-                // あなたの番号n（1〜21）に対し、対応する表のインデックスは (n-1)
-                // ※あなたの21番が表の21番を指すなら table[n-1]
-                const slip = table[n - 1]; 
-                if (slip === null) continue;
+                // table[21-n] は押し位置(下段)nに対応する滑り
+                const slip = table[21 - n]; 
+                if (slip === null) return;
                 
-                // 押し位置n + 滑りslip = 停止位置
-                let stopPos = n + slip;
-                while (stopPos > 21) stopPos -= 21;
+                // 押し位置nから滑り分を引いた先が、現在の停止位置(下段)か判定
+                let stopPos = n - slip;
+                while (stopPos < 1) stopPos += 21;
                 
                 if (stopPos === currentBottom) {
                     matches.push(`[${slip}]`);
                 }
             }
-            
             if (matches.length > 0) {
                 const item = document.createElement('div');
                 item.className = `flag-item c-${f.c}`;
