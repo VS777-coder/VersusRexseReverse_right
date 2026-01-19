@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Right Reel Debugger v2</title>
+    <title>Versus Revise - Right Reel Debugger [Mobile Fixed]</title>
     <style>
+        /* スマホのスクロールを完全に殺す */
+        html, body { 
+            position: fixed; width: 100%; height: 100%; overflow: hidden; 
+            overscroll-behavior: none; -webkit-overflow-scrolling: auto;
+        }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
-        body { background-color: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { background-color: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         
         .state-tabs { display: flex; width: 100%; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
         .state-tab { 
@@ -20,19 +25,22 @@
         .tab-seven_flag { background: rgba(213, 0, 0, 0.15); color: #d50000; }
         .tab-bar_flag { background: rgba(150, 150, 150, 0.15); color: #777; }
 
-        /* 選択時：100%の色 */
         .tab-hazure.active { background: #eee !important; color: #000; border-color: #fff; }
         .tab-x_flag.active { background: #304ffe !important; color: #fff; border-color: #fff; }
         .tab-seven_flag.active { background: #d50000 !important; color: #fff; border-color: #fff; }
         .tab-bar_flag.active { background: #555 !important; color: #fff; border-color: #fff; }
 
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
-        .reel-frame { width: 130px; height: 100%; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
+        .reel-frame { 
+            width: 140px; height: 100%; background: #000; border: 2px solid #444; 
+            border-radius: 8px; overflow: hidden; position: relative;
+        }
         
-        /* リール本体：CSS Transformで動かす */
         #reel-window { 
             position: absolute; width: 100%; top: 0; left: 0;
-            will-change: transform; pointer-events: none; 
+            will-change: transform; pointer-events: none;
+            /* GPU加速を強制 */
+            transform: translateZ(0); 
         }
         
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; }
@@ -41,7 +49,7 @@
 
         .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 35px); height: 210px; border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
         
-        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
+        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: scroll; -webkit-overflow-scrolling: touch; }
         .flag-item { display: flex; align-items: center; height: 44px; padding: 0 10px; border-bottom: 1px solid #333; }
         .flag-name { font-size: 11px; font-weight: bold; width: 85px; flex-shrink: 0; }
         .flag-data { font-size: 18px; color: #fff; font-family: monospace; font-weight: bold; letter-spacing: -1px; }
@@ -70,7 +78,6 @@
     </div>
 
 <script>
-    // データは一切修正せず保持
     const GOD_DATA = {
         hazure: {
             hazure:     [0,0,2,2,0,1,2,3,4,0,1,1,3,0,0,1,2,0,1,2,1],
@@ -148,69 +155,59 @@
     ];
 
     const SYMBOL_H = 70;
-    const REEL_COUNT = 21;
-    let currentY = -210; 
-    let currentState = 'hazure';
+    const REEL_LEN = 21;
+    let currentY = -210, currentState = 'hazure';
     const win = document.getElementById('reel-window');
 
     function createReel() {
-        // 3倍のリールを並べてループを擬似的に作る
         win.innerHTML = '';
-        for (let loop = 0; loop < 3; loop++) {
-            for (let i = 0; i < REEL_COUNT; i++) {
-                const num = REEL_COUNT - i;
+        // 3周分描画
+        for (let l = 0; l < 3; l++) {
+            for (let i = 0; i < REEL_LEN; i++) {
+                const n = REEL_LEN - i;
                 const d = document.createElement('div');
                 d.className = 'symbol';
-                d.innerHTML = `<div class="index-num">${num}</div><div class="symbol-image" style="background-position:0% ${(21-num)*5}%"></div>`;
+                d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%"></div>`;
                 win.appendChild(d);
             }
         }
-        updateTransform();
+        applyScroll();
     }
 
-    function updateTransform() {
-        const totalH = REEL_COUNT * SYMBOL_H;
-        // 表示範囲の正規化
-        if (currentY > 0) currentY -= totalH;
-        if (currentY < -totalH) currentY += totalH;
-        // CSS Transformで高速描画（ピクつき防止）
-        win.style.transform = `translate3d(0, ${currentY - totalH}px, 0)`;
+    function applyScroll() {
+        const h = REEL_LEN * SYMBOL_H;
+        if (currentY > 0) currentY -= h;
+        if (currentY < -h) currentY += h;
+        win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
 
     function init() {
-        const frame = document.getElementById('reel-touch-area');
-        let startY = 0, initialY = 0, isDragging = false;
+        const area = document.getElementById('reel-touch-area');
+        let startY = 0, initialY = 0, isDrag = false;
 
-        const onStart = (y) => { startY = y; initialY = currentY; isDragging = true; };
-        const onMove = (y) => { if(!isDragging) return; currentY = initialY + (y - startY); updateTransform(); };
-        const onEnd = () => { 
-            if(!isDragging) return; isDragging = false;
-            currentY = Math.round(currentY / SYMBOL_H) * SYMBOL_H;
-            updateTransform();
-            updateResults();
-        };
+        const start = (y) => { startY = y; initialY = currentY; isDrag = true; };
+        const move = (y) => { if(!isDrag) return; currentY = initialY + (y - startY); applyScroll(); };
+        const end = () => { if(!isDrag) return; isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); };
 
-        frame.addEventListener('touchstart', e => { e.preventDefault(); onStart(e.touches[0].pageY); }, {passive: false});
-        frame.addEventListener('touchmove', e => { e.preventDefault(); onMove(e.touches[0].pageY); }, {passive: false});
-        frame.addEventListener('touchend', onEnd);
-        frame.addEventListener('mousedown', e => { e.preventDefault(); onStart(e.pageY); });
-        window.addEventListener('mousemove', e => onMove(e.pageY));
-        window.addEventListener('mouseup', onEnd);
+        area.addEventListener('touchstart', e => { start(e.touches[0].pageY); }, {passive: false});
+        area.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].pageY); }, {passive: false});
+        area.addEventListener('touchend', end);
+        area.addEventListener('mousedown', e => { e.preventDefault(); start(e.pageY); });
+        window.addEventListener('mousemove', e => move(e.pageY));
+        window.addEventListener('mouseup', end);
 
-        createReel();
-        updateResults();
+        createReel(); update();
     }
 
     function switchState(s) {
         currentState = s;
         document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s));
-        updateResults(); // 位置は保持
+        update();
     }
 
-    function updateResults() {
+    function update() {
         const list = document.getElementById('flag-list');
         list.innerHTML = '';
-        // 判定：140px(3マス目)が中段
         const cIdx = Math.round(-currentY / SYMBOL_H) + 3;
         let r_c = 21 - (cIdx % 21);
         if (r_c > 21) r_c -= 21; if (r_c < 1) r_c += 21;
