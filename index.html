@@ -43,6 +43,11 @@
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
+    // 正規画像に基づいた右リール配列 (21番〜1番)
+    const SYMBOLS_LIST = [
+        "青リプ","ベル","スイカ","リプ","チェリー","赤7","ベル","スイカ","青リプ","ベル","リプ","青リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","スイカ","青リプ"
+    ];
+
     const GOD_DATA = {
         hazure: {
             hazure: [0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3],
@@ -108,6 +113,7 @@
             tokE: [0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1]
         }
     };
+
     const FLAGS = [
         { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "通リプ", c: "rep" },
         { k: "jac_rep", n: "JACリ", c: "rep" }, { k: "rt_rep", n: "RTリ", c: "rep" },
@@ -117,10 +123,10 @@
         { k: "tokA", n: "特A", c: "tok" }, { k: "tokB", n: "特B", c: "tok" },
         { k: "tokC", n: "特C", c: "tok" }, { k: "tokD", n: "特D", c: "tok" }, { k: "tokE", n: "特E", c: "tok" }
     ];
+
     let currentY = -210, currentState = 'hazure';
     const SYMBOL_H = 70;
     const win = document.getElementById('reel-window');
-    const SYMBOLS_LIST = ["X","ベル","リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","リプ","スイカ","X","ベル","リプ","チェリー","赤7","リプ","X","ベル","リプ"];
 
     function createReel() {
         win.innerHTML = '';
@@ -132,11 +138,13 @@
         }}
         applyScroll();
     }
+
     function applyScroll() {
         const h = 21 * SYMBOL_H;
         if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
         win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
+
     function init() {
         const area = document.getElementById('reel-touch-area');
         let startY = 0, initialY = 0, isDrag = false;
@@ -148,21 +156,19 @@
         window.addEventListener('mouseup', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
         createReel(); update();
     }
+
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
     
-    // 逆引きロジック
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
-        // 赤枠の中段(あるいは基準位置)にある番号を特定
         const offset = Math.round(-currentY / SYMBOL_H);
-        let targetStopPos = 21 - ((offset + 1) % 21); // 基準の停止位置(下段等の調整が必要ならここ)
+        let targetStopPos = 21 - ((offset + 2) % 21); // 赤枠中段(あるいは基準位置)
         if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
             const table = data[f.k]; if (!table) return;
             const res = [];
-            // 全21箇所の押し位置を全スキャンして、計算上の停止位置がtargetStopPosになるものを探す
             for (let pushPos = 1; pushPos <= 21; pushPos++) {
                 let slip = table[21 - pushPos];
                 let calcStop = pushPos - slip;
