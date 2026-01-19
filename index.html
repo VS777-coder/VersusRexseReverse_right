@@ -14,21 +14,26 @@
         .state-tabs { display: flex; width: 100%; background: #222; border: 1px solid #444; border-radius: 4px; margin-bottom: 5px; flex-shrink: 0; }
         .state-tab { flex: 1; text-align: center; padding: 12px 2px; font-size: 10px; font-weight: bold; cursor: pointer; color: #aaa; }
         .tab-hazure.active { background: #eee; color: #000; }
-        .tab-x.active      { background: #304ffe; color: #fff; }
-        .tab-seven.active  { background: #d50000; color: #fff; }
-        .tab-bar.active    { background: #000; color: #fff; border-bottom: 3px solid #777; }
+        .tab-x_flag.active { background: #304ffe; color: #fff; }
+        .tab-seven_flag.active { background: #d50000; color: #fff; }
+        .tab-bar_flag.active { background: #000; color: #fff; border-bottom: 3px solid #777; }
 
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
-        .reel-frame { width: 100px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
+        .reel-frame { width: 125px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; cursor: ns-resize; }
         .reel-window { height: 100%; display: flex; flex-direction: column; }
-        .symbol { height: 70px; display: flex; align-items: center; border-bottom: 1px solid #1a1a1a; }
-        .index-num { width: 25px; color: #ffd700; text-align: center; font-size: 11px; font-weight: bold; }
-        .symbol-image { flex-grow: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; }
-        .center-guide { position: absolute; top: 140px; left: 0; width: 100%; height: 210px; border: 3px solid #00ff66; background: rgba(0, 255, 102, 0.05); pointer-events: none; z-index: 10; }
+        .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; position: relative; }
+        .index-num { width: 35px; color: #ffd700; background: #222; text-align: center; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
+        .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
+        
+        .center-guide { 
+            position: absolute; top: 140px; right: 0; width: calc(100% - 35px); height: 210px; 
+            border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 10; 
+            box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.2);
+        }
 
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
         .flag-item { display: flex; align-items: center; height: 38px; padding: 0 6px; border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); }
-        .flag-name { font-size: 11px; font-weight: bold; width: 60px; flex-shrink: 0; }
+        .flag-name { font-size: 11px; font-weight: bold; width: 65px; flex-shrink: 0; }
         .flag-data { font-size: 14px; color: #fff; font-family: monospace; font-weight: bold; }
 
         .c-rep { border-left-color: #00ccff; color: #00ccff; } .c-bell { border-left-color: #eeee00; color: #eeee00; } 
@@ -39,9 +44,9 @@
 <body>
     <div class="state-tabs">
         <div id="tab-hazure" class="state-tab tab-hazure active" onclick="switchState('hazure')">未成立</div>
-        <div id="tab-x_flag" class="state-tab tab-x" onclick="switchState('x_flag')">XBIG</div>
-        <div id="tab-seven_flag" class="state-tab tab-seven" onclick="switchState('seven_flag')">7BIG</div>
-        <div id="tab-bar_flag" class="state-tab tab-bar" onclick="switchState('bar_flag')">REG</div>
+        <div id="tab-x_flag" class="state-tab tab-x_flag" onclick="switchState('x_flag')">XBIG</div>
+        <div id="tab-seven_flag" class="state-tab tab-seven_flag" onclick="switchState('seven_flag')">7BIG</div>
+        <div id="tab-bar_flag" class="state-tab tab-bar_flag" onclick="switchState('bar_flag')">REG</div>
     </div>
     <div class="main-content">
         <div id="reel-touch" class="reel-frame">
@@ -50,7 +55,75 @@
         </div>
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
+
 <script>
+    // 制御データ: [21番, 20番, ... 1番] の順のスベリコマ数
+    const GOD_DATA = {
+        hazure: {
+            hazure: [0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,1,2,0,1,2],
+            normal_rep: [3,0,1,2,3,0,1,2,3,4,0,1,2,3,1,2,3,4,2,3,3],
+            jac_rep: [0,1,2,3,0,1,2,3,4,1,2,1,0,1,2,3,4,0,1,2,3],
+            rt_rep: [3,0,1,2,3,0,1,2,3,4,1,1,2,3,1,2,3,4,2,3,3],
+            bellA: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,1,1,2,3,0,1],
+            bellB: [2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,1,1,2,3,0,1],
+            suikaA: [0,3,0,3,2,1,4,0,4,0,3,4,4,4,1,3,2,3,0,2,1],
+            suikaB: [0,3,0,3,2,1,4,0,4,0,3,4,4,4,1,3,2,3,0,2,1],
+            cherA: [2,3,0,1,2,3,2,3,0,1,2,1,2,3,4,1,0,1,2,3,3],
+            cherB: [2,3,0,1,2,3,2,3,0,1,2,1,2,3,4,1,0,1,2,3,3]
+        },
+        x_flag: {
+            hazure: [2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,1],
+            normal_rep: [3,0,1,2,3,0,1,2,3,1,0,2,1,0,1,3,4,4,3,1,3],
+            jac_rep: [0,1,2,3,0,1,2,1,4,4,2,2,1,1,1,3,4,4,3,1,3],
+            rt_rep: [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
+            bellA: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            bellB: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            suikaA: [2,3,4,3,2,1,4,3,1,2,3,0,4,2,2,1,1,0,1,0,1],
+            suikaB: [2,3,4,3,2,1,4,3,1,2,3,0,4,2,2,1,1,0,1,0,1],
+            cherA: [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
+            cherB: [2,3,4,1,2,3,2,3,4,4,1,3,2,1,1,1,1,1,1,1,1],
+            tokA: [2,3,4,3,2,0,1,3,2,4,3,2,2,0,4,2,0,0,1,1,1],
+            tokB: [2,3,4,3,1,0,3,1,2,0,3,1,1,4,4,4,4,4,2,2,1],
+            tokC: [2,3,4,3,2,0,1,3,1,0,0,2,1,4,2,3,2,3,2,2,1],
+            tokD: [2,3,0,1,1,2,3,1,1,0,1,4,3,3,3,3,3,3,2,2,1],
+            tokE: [2,3,4,3,2,1,3,1,1,4,3,2,1,0,1,0,0,0,2,2,1]
+        },
+        seven_flag: {
+            hazure: [0,1,0,3,2,0,0,3,3,4,3,0,1,0,3,2,1,0,1,0,1],
+            normal_rep: [3,0,1,2,3,0,1,3,4,1,0,2,1,0,1,3,4,4,3,1,3],
+            jac_rep: [0,1,2,3,0,1,2,1,4,4,2,2,1,1,1,3,4,4,3,1,3],
+            rt_rep: [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
+            bellA: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            bellB: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            suikaA: [0,3,0,3,2,1,4,3,1,4,3,0,4,2,2,1,1,0,1,0,1],
+            suikaB: [0,3,0,3,2,1,4,3,1,4,3,0,4,2,2,1,1,0,1,0,1],
+            cherA: [2,3,1,1,2,1,1,1,1,4,1,3,1,1,1,1,1,1,1,1,1],
+            cherB: [2,3,1,1,2,1,1,1,1,4,1,3,1,1,1,1,1,1,1,1,1],
+            tokA: [2,3,0,3,2,0,1,2,2,4,3,2,2,3,3,0,0,2,2,1,1],
+            tokB: [1,2,2,3,1,0,3,1,3,0,3,1,1,1,1,4,4,3,4,1,1],
+            tokC: [2,3,1,1,2,4,4,1,1,3,3,3,1,1,1,3,4,2,2,1,1],
+            tokD: [2,3,0,3,2,4,4,0,0,1,1,2,1,3,3,3,1,1,1,1,1],
+            tokE: [2,3,0,3,2,0,0,1,1,0,0,2,1,0,0,1,1,1,1,1,1]
+        },
+        bar_flag: {
+            hazure: [2,3,0,1,0,1,2,0,0,4,3,2,0,1,2,1,0,1,0,1,1],
+            normal_rep: [3,0,1,2,3,0,1,3,4,2,0,4,2,0,1,3,4,4,3,1,3],
+            jac_rep: [3,0,1,2,3,0,1,2,1,1,4,4,1,1,1,3,4,4,3,1,3],
+            rt_rep: [3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,3,4,4,3,1,3],
+            bellA: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            bellB: [2,3,0,1,2,3,4,1,1,0,3,1,1,2,3,1,1,1,1,0,1],
+            suikaA: [2,3,0,1,0,3,1,0,0,4,2,2,1,2,1,1,1,0,1,0,1],
+            suikaB: [2,3,0,1,0,3,1,0,0,4,2,2,1,2,1,1,1,0,1,0,1],
+            cherA: [2,3,0,1,2,3,1,4,4,2,1,0,3,4,4,1,2,1,2,3,3],
+            cherB: [2,3,0,1,2,3,1,4,4,2,1,0,3,4,4,1,2,1,2,3,3],
+            tokA: [0,1,2,3,0,1,1,1,1,4,4,2,2,1,1,1,1,3,0,0,0],
+            tokB: [0,1,1,3,4,4,4,4,4,4,3,1,1,1,1,1,1,1,1,1,1],
+            tokC: [0,1,2,3,4,4,4,4,4,4,3,2,1,1,1,1,1,1,1,1,1],
+            tokD: [0,1,2,1,0,1,1,1,1,2,2,0,0,0,0,0,0,0,0,1,1],
+            tokE: [0,1,2,3,4,1,1,0,0,4,4,2,1,0,0,0,0,0,0,1,1]
+        }
+    };
+
     const FLAG_DEFS = [
         { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "通常リプ", c: "rep" },
         { k: "jac_rep", n: "JACリプ", c: "rep" }, { k: "rt_rep", n: "RTリプ", c: "rep" },
@@ -61,21 +134,25 @@
         { k: "tokC", n: "特役C", c: "tok" }, { k: "tokD", n: "特役D", c: "tok" }, { k: "tokE", n: "特役E", c: "tok" }
     ];
 
-    // GOD_DATA 略（内部インデックス0番が21番を指すように処理）
-    /* ... OCRデータをここへ ... */
-
-    let currentState = 'hazure', currentCenter = 18; 
-    let startY = 0;
+    let currentState = 'hazure', currentCenter = 18, isDragging = false, startY = 0;
 
     function init() {
         const frame = document.getElementById('reel-touch');
-        frame.addEventListener('touchstart', e => { startY = e.touches[0].pageY; }, { passive: false });
-        frame.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
-        frame.addEventListener('touchend', e => {
-            const diff = startY - e.changedTouches[0].pageY;
-            // 21(上)→1(下)への並びに合わせた回転処理
-            if (Math.abs(diff) > 20) moveReel(diff > 0 ? 1 : -1);
+        frame.addEventListener('touchstart', e => { startY = e.touches[0].pageY; isDragging = true; }, { passive: false });
+        frame.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            const diff = startY - e.touches[0].pageY;
+            if (Math.abs(diff) > 25) { moveReel(diff > 0 ? 1 : -1); startY = e.touches[0].pageY; }
         }, { passive: false });
+        frame.addEventListener('touchend', () => { isDragging = false; });
+        frame.addEventListener('mousedown', e => { startY = e.pageY; isDragging = true; e.preventDefault(); });
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const diff = startY - e.pageY;
+            if (Math.abs(diff) > 25) { moveReel(diff > 0 ? 1 : -1); startY = e.pageY; }
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        frame.addEventListener('wheel', e => { e.preventDefault(); moveReel(e.deltaY > 0 ? 1 : -1); }, { passive: false });
         updateView();
     }
 
@@ -95,14 +172,14 @@
     function updateView() {
         const win = document.getElementById('reel-window');
         win.innerHTML = '';
-        for (let i = -3; i <= 3; i++) {
+        for (let i = 3; i >= -3; i--) {
             let r = currentCenter + i;
             while (r > 21) r -= 21;
             while (r < 1) r += 21;
             const d = document.createElement('div');
             d.className = 'symbol';
-            // 背景座標は21番を0%とし、18リプの下に17チェリーが来る配置を固定
-            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(21-r)*5}%"></div>`;
+            const pos = (21 - r) * 5; 
+            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${pos}%"></div>`;
             win.appendChild(d);
         }
         updateResults();
@@ -112,8 +189,8 @@
         const list = document.getElementById('flag-list');
         list.innerHTML = '';
         const dataSet = GOD_DATA[currentState];
+        if (!dataSet) return;
         
-        // 下段停止位置 = 中段 - 1
         let currentBottom = currentCenter - 1;
         if (currentBottom < 1) currentBottom = 21;
 
@@ -121,24 +198,17 @@
             const table = dataSet[f.k];
             if (!table) return;
             const matches = [];
-            
             for (let n = 1; n <= 21; n++) {
-                // table[21-n] は押し位置(下段)nに対応する滑り
+                // 画像データは21番から1番の順(index: 0〜20)
                 const slip = table[21 - n]; 
-                if (slip === null) return;
-                
-                // 押し位置nから滑り分を引いた先が、現在の停止位置(下段)か判定
                 let stopPos = n - slip;
                 while (stopPos < 1) stopPos += 21;
-                
-                if (stopPos === currentBottom) {
-                    matches.push(`[${slip}]`);
-                }
+                if (stopPos === currentBottom) matches.push(`[${slip}]`);
             }
             if (matches.length > 0) {
                 const item = document.createElement('div');
                 item.className = `flag-item c-${f.c}`;
-                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${matches.join('')}</div>`;
+                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${matches.join(' ')}</div>`;
                 list.appendChild(item);
             }
         });
