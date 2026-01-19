@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Final Precision]</title>
+    <title>Versus Revise - Absolute Data Checker [Fixed Physics Build]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
@@ -43,10 +43,9 @@
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // 右リール正規配列 (21番〜1番)
-    const REEL_STRIP = ["チェリー","ベル","スイカ","リプレイ","チェリー","赤7","ベル","スイカ","リプレイ","チェリー","ベル","リプレイ","BAR","チェリー","ベル","スイカ","リプレイ","X","ベル","スイカ","リプレイ"];
+    const SYMBOLS_LIST = ["チェリー","ベル","スイカ","リプレイ","チェリー","赤7","ベル","スイカ","リプレイ","チェリー","ベル","リプレイ","BAR","チェリー","ベル","スイカ","リプレイ","X","ベル","スイカ","リプレイ"];
 
-    const GOD_DATA = { /* 神のデータ（絶対正解） */
+    const GOD_DATA = {
         hazure: { hazure:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3], normal_rep:[3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,1,0,1,2,3,4,0,1,2,2,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1], bellB:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1], suikaA:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1], suikaB:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3] },
         x_flag: { hazure:[2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3], normal_rep:[3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,2,3,4,0,1,2], jac_rep:[0,1,2,1,0,0,4,4,2,2,2,0,0,2,2,3,4,4,3,1,3], rt_rep:[3,0,1,0,3,3,1,3,1,1,1,1,1,1,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,4,1,1,0,3,1,1,2,3,0,1,1,1,0,1], bellB:[2,3,0,1,2,2,4,1,1,0,3,1,1,2,3,0,1,1,1,0,1], suikaA:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], suikaB:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,1,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,1,3,2,3], tokA:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1], tokB:[2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1], tokC:[2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1], tokD:[2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1], tokE:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1] },
         seven_flag: { hazure:[0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1], normal_rep:[3,0,1,0,3,3,3,3,1,2,3,4,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,1,0,0,1,0,1,2,3,4,0,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,0,3,3,3,3,1,2,3,4,2,0,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,0,0,1,2,3,0,1,2,3,0,1,2,3,0,1], bellB:[2,3,0,1,2,2,0,0,1,2,3,0,1,2,3,0,1,2,3,0,1], suikaA:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], suikaB:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], cherA:[2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3], tokA:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,2,0,1], tokB:[1,2,2,3,0,0,1,0,1,2,3,4,3,2,3,4,3,1,1,3,0], tokC:[2,3,0,3,2,0,1,0,1,2,3,4,2,2,4,4,2,2,2,2,1], tokD:[2,3,0,3,2,0,1,0,3,2,1,0,2,2,4,4,1,3,3,2,1], tokE:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,3,2,1] },
@@ -88,27 +87,24 @@
     }
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
     
-    // 真の逆引きロジック
+    // 正しい物理逆引き: 狙った位置 + 滑り = 止まった位置
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
         const offset = Math.round(-currentY / SYMBOL_H);
-        // ガイド枠内の「下段」にあるシンボル番号を特定
-        let targetStopPos = 21 - ((offset + 4) % 21);
+        let targetStopPos = 21 - ((offset + 4) % 21); // 下段の番号を基準
         if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
             const table = data[f.k]; if (!table) return;
             const res = [];
-            // 全21箇所の押し位置（下段狙い）に対して、神のデータを参照
             for (let pushPos = 1; pushPos <= 21; pushPos++) {
-                // データのインデックス同期：table[0] が 21番に対応
                 let slip = table[21 - pushPos];
-                // 逆算：(狙った位置 - 滑った量) = 止まった位置
-                let calcStop = pushPos - slip;
-                if (calcStop <= 0) calcStop += 21;
+                // 物理的な移動: (狙った位置 + スベリ)
+                let calcStop = pushPos + slip;
+                if (calcStop > 21) calcStop -= 21;
                 
-                // 目の前の下段番号(targetStopPos)と一致するパターンを全網羅
+                // 停止位置が一致する場合のみ表示
                 if (calcStop === targetStopPos) {
                     res.push(`[${pushPos}:${slip}]`);
                 }
