@@ -8,12 +8,11 @@
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
         body { background-color: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* 状態タブ：非選択時も背景色を明示 */
         .state-tabs { display: flex; width: 100%; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
         .state-tab { 
             flex: 1; text-align: center; padding: 12px 2px; font-size: 9px; font-weight: bold; 
             cursor: pointer; color: #888; border-radius: 4px; border: 1px solid #444;
-            background: #333; /* 非選択ボタンの色 */
+            background: #333; /* 非選択ボタンの色をハッキリさせる */
             display: flex; align-items: center; justify-content: center;
         }
         .state-tab.active { color: #fff; border: 1px solid #fff; }
@@ -150,8 +149,11 @@
         const frame = document.getElementById('reel-touch');
         let startY = 0, initialY = 0, isDown = false;
 
+        // タッチ開始
         const onStart = (y) => { startY = y; initialY = currentY; isDown = true; };
+        // タッチ移動（差分ではなく、開始位置からの累積距離で計算）
         const onMove = (y) => { if(!isDown) return; currentY = initialY + (y - startY); renderReel(); };
+        // タッチ終了（スナップ）
         const onEnd = () => { if(!isDown) return; isDown = false; currentY = Math.round(currentY / SYMBOL_H) * SYMBOL_H; renderReel(); updateResults(); };
 
         frame.addEventListener('touchstart', e => { e.preventDefault(); onStart(e.touches[0].pageY); }, {passive: false});
@@ -170,6 +172,7 @@
         while (currentY > 0) currentY -= total;
         while (currentY < -total) currentY += total;
         win.innerHTML = '';
+        // 描画範囲を固定
         for (let i = -1; i <= 8; i++) {
             const idx = Math.floor(-currentY / SYMBOL_H) + i;
             let num = 21 - (idx % 21);
