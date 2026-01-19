@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Right Reel Evidence-Based Fix</title>
+    <title>Versus Revise - Right Reel Top-1 Fix</title>
     <style>
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
         body { 
@@ -23,8 +23,6 @@
         .reel-window { height: 100%; display: flex; flex-direction: column; }
         .symbol { height: 70px; display: flex; align-items: center; border-bottom: 1px solid #1a1a1a; }
         .index-num { width: 25px; color: #ffd700; text-align: center; font-size: 11px; font-weight: bold; }
-        
-        /* エビデンス画像に基づき、1番が一番上となる座標計算 */
         .symbol-image { flex-grow: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; }
         .center-guide { position: absolute; top: 140px; left: 0; width: 100%; height: 210px; border: 3px solid #00ff66; background: rgba(0, 255, 102, 0.05); pointer-events: none; z-index: 10; }
 
@@ -32,7 +30,6 @@
         .flag-item { display: flex; align-items: center; height: 38px; padding: 0 6px; border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); }
         .flag-name { font-size: 11px; font-weight: bold; width: 60px; flex-shrink: 0; }
         .flag-data { font-size: 14px; color: #fff; font-family: monospace; font-weight: bold; }
-
         .c-rep { border-left-color: #00ccff; color: #00ccff; } .c-bell { border-left-color: #eeee00; color: #eeee00; } 
         .c-suika { border-left-color: #00ff66; color: #00ff66; } .c-cher { border-left-color: #ff0066; color: #ff0066; }
         .c-hazure { border-left-color: #888; color: #ccc; } .c-tok { border-left-color: #cc33ff; color: #cc33ff; }
@@ -79,7 +76,7 @@
         frame.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
         frame.addEventListener('touchend', e => {
             const diff = startY - e.changedTouches[0].pageY;
-            // エビデンス画像(上15, 下19)の順序に合わせるスワイプ動作
+            // エビデンス画像(上17, 下19)の順序に合わせる
             if (Math.abs(diff) > 20) moveReel(diff > 0 ? 1 : -1);
         }, { passive: false });
         updateView();
@@ -101,14 +98,14 @@
     function updateView() {
         const win = document.getElementById('reel-window');
         win.innerHTML = '';
-        // 描画順：1番が上で、21番に向かって下がるように修正
+        // 描画：上(-3)から下(3)へ番号が増える順序
         for (let i = -3; i <= 3; i++) {
             let r = currentCenter + i;
             while (r > 21) r -= 21;
             while (r < 1) r += 21;
             const d = document.createElement('div');
             d.className = 'symbol';
-            // 1番が最上部(0%)。背景座標を (r-1)*5% に固定
+            // 番号r=1が最上部。座標計算を同期
             d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(r-1)*5}%"></div>`;
             win.appendChild(d);
         }
@@ -120,8 +117,7 @@
         list.innerHTML = '';
         const dataSet = GOD_DATA[currentState];
         
-        // エビデンス画像(上15, 下19)に基づく停止座標
-        // 中段を currentCenter とすると、下段は currentCenter + 1
+        // 下段位置(中段+1)
         let currentBottom = currentCenter + 1;
         if (currentBottom > 21) currentBottom = 1;
 
@@ -130,10 +126,11 @@
             if (!table) return;
             const matches = [];
             
-            // 1〜21 の押し位置(下段)をチェック
             for (let n = 1; n <= 21; n++) {
-                // OCR表：21番が0、1番が20。あなたの番号をインデックスに変換
-                const slip = table[21 - n]; 
+                // OCR表：21番がインデックス0。
+                // あなたの番号n（1〜21）に対し、対応する表のインデックスは (n-1)
+                // ※あなたの21番が表の21番を指すなら table[n-1]
+                const slip = table[n - 1]; 
                 if (slip === null) continue;
                 
                 // 押し位置n + 滑りslip = 停止位置
