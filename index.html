@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Final Debug Build]</title>
+    <title>Versus Revise - Absolute Data Checker [Fixed Build]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
@@ -13,20 +13,22 @@
         .tab-x_flag { background: rgba(48, 79, 254, 0.15); color: #304ffe; }
         .tab-seven_flag { background: rgba(213, 0, 0, 0.15); color: #d50000; }
         .tab-bar_flag { background: rgba(150, 150, 150, 0.15); color: #777; }
-        .active { border-color: #fff !important; background: rgba(255,255,255,0.2) !important; color: #fff !important; box-shadow: 0 0 5px #fff; }
+        .tab-hazure.active { background: #eee !important; color: #000; border-color: #fff; }
+        .tab-x_flag.active { background: #304ffe !important; color: #fff; border-color: #fff; }
+        .tab-seven_flag.active { background: #d50000 !important; color: #fff; border-color: #fff; }
+        .tab-bar_flag.active { background: #555 !important; color: #fff; border-color: #fff; }
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
         .reel-frame { width: 110px; height: 100%; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
-        #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; }
-        .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; align-items: center; }
-        .index-num { width: 30px; color: #ffd700; background: #222; text-align: center; font-size: 14px; font-weight: bold; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
-        .symbol-name { flex: 1; text-align: center; font-size: 15px; font-weight: bold; color: #eee; }
-        .center-guide { position: absolute; top: 0px; right: 0; width: 100%; height: 70px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.1); pointer-events: none; z-index: 100; }
+        #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; transform: translateZ(0); }
+        .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; }
+        .index-num { width: 28px; color: #ffd700; background: #222; text-align: center; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
+        .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
+        .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 28px); height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .flag-item { display: flex; align-items: center; height: 32px; padding: 0 8px; border-bottom: 1px solid #222; font-size: 11px; }
-        .flag-name { width: 60px; font-weight: bold; color: #aaa; }
-        .flag-slip { flex: 1; text-align: center; font-size: 16px; font-weight: bold; color: #ffd700; }
-        .flag-stop { width: 55px; text-align: right; color: #888; font-family: monospace; }
-        .c-rep { color: #4fc3f7; } .c-bell { color: #fff176; } .c-suika { color: #81c784; } .c-cher { color: #e57373; } .c-tok { color: #ce93d8; }
+        .flag-item { display: flex; align-items: center; height: 34px; padding: 0 4px; border-bottom: 1px solid #222; }
+        .flag-name { font-size: 9px; font-weight: bold; width: 55px; flex-shrink: 0; }
+        .flag-data { font-size: 11px; color: #fff; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: -1.5px; white-space: nowrap; }
+        .c-rep { background: rgba(0, 204, 255, 0.1); color: #00ccff; } .c-bell { background: rgba(238, 238, 0, 0.1); color: #eeee00; } .c-suika { background: rgba(0, 255, 102, 0.1); color: #00ff66; } .c-cher { background: rgba(255, 0, 102, 0.1); color: #ff0066; } .c-hazure { background: rgba(255, 255, 255, 0.05); color: #ccc; } .c-tok { background: rgba(204, 51, 255, 0.1); color: #cc33ff; }
     </style>
 </head>
 <body>
@@ -37,27 +39,10 @@
         <div id="tab-bar_flag" class="state-tab tab-bar_flag" onclick="switchState('bar_flag')">Reg成立</div>
     </div>
     <div class="main-content">
-        <div id="reel-touch-area" class="reel-frame">
-            <div class="center-guide"></div>
-            <div id="reel-window"></div>
-        </div>
+        <div id="reel-touch-area" class="reel-frame"><div class="center-guide"></div><div id="reel-window"></div></div>
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // ユーザー指定配列（21番〜1番）
-    // 18:リプ, 17:チェ, 16:赤7 を含む正しい並び
-    const REEL_DATA = [
-        "X", "ベル", "リプレイ", "ベル", "スイカ", "リプレイ", "ベル", "スイカ", "赤7", "ベル", 
-        "リプレイ", "スイカ", "X", "ベル", "リプレイ", "チェリー", "赤7", "リプレイ", "X", "ベル", "リプレイ"
-    ];
-
-    const FLAGS = [
-        {k:"hazure",n:"ハズレ",c:""},{k:"normal_rep",n:"通リプ",c:"c-rep"},{k:"jac_rep",n:"JACリ",c:"c-rep"},{k:"rt_rep",n:"RTリ",c:"c-rep"},
-        {k:"bellA",n:"ベルA",c:"c-bell"},{k:"bellB",n:"ベルB",c:"c-bell"},{k:"suikaA",n:"スイA",c:"c-suika"},{k:"suikaB",n:"スイB",c:"c-suika"},
-        {k:"cherA",n:"チェA",c:"c-cher"},{k:"cherB",n:"チェB",c:"c-cher"},{k:"tokA",n:"特A",c:"c-tok"},{k:"tokB",n:"特B",c:"c-tok"},
-        {k:"tokC",n:"特C",c:"c-tok"},{k:"tokD",n:"特D",c:"c-tok"},{k:"tokE",n:"特E",c:"c-tok"}
-    ];
-
     const GOD_DATA = {
         hazure: {
             hazure: [0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3],
@@ -123,68 +108,72 @@
             tokE: [0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1]
         }
     };
-
-    let currentY = -70 * 21, currentState = 'hazure';
+    const FLAGS = [
+        { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "通リプ", c: "rep" },
+        { k: "jac_rep", n: "JACリ", c: "rep" }, { k: "rt_rep", n: "RTリ", c: "rep" },
+        { k: "bellA", n: "ベルA", c: "bell" }, { k: "bellB", n: "ベルB", c: "bell" },
+        { k: "suikaA", n: "スイA", c: "suika" }, { k: "suikaB", n: "スイB", c: "suika" },
+        { k: "cherA", n: "チェA", c: "cher" }, { k: "cherB", n: "チェB", c: "cher" },
+        { k: "tokA", n: "特A", c: "tok" }, { k: "tokB", n: "特B", c: "tok" },
+        { k: "tokC", n: "特C", c: "tok" }, { k: "tokD", n: "特D", c: "tok" }, { k: "tokE", n: "特E", c: "tok" }
+    ];
+    let currentY = -210, currentState = 'hazure';
     const SYMBOL_H = 70;
     const win = document.getElementById('reel-window');
+    
+    // インデックス[3]=18番:リプ, [4]=17番:チェ, [5]=16番:赤7
+    const SYMBOLS_LIST = ["X","ベル","リプ","ベル","スイカ","リプ","ベル","スイカ","赤7","ベル","リプ","スイカ","X","ベル","リプ","チェリー","赤7","リプ","X","ベル","リプ"];
 
     function createReel() {
         win.innerHTML = '';
-        for (let l = 0; l < 3; l++) {
-            REEL_DATA.forEach((s, i) => {
-                const n = 21 - i;
-                const d = document.createElement('div'); d.className = 'symbol';
-                d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-name">${s}</div>`;
-                win.appendChild(d);
-            });
-        }
+        for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) {
+            const n = 21 - i;
+            const d = document.createElement('div'); d.className = 'symbol';
+            // 元のUIを維持し、シンボル名を表示（画像がない環境への配慮）
+            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%; display:flex; align-items:center; justify-content:center; font-size:10px;">${SYMBOLS_LIST[i]}</div>`;
+            win.appendChild(d);
+        }}
         applyScroll();
     }
-
     function applyScroll() {
         const h = 21 * SYMBOL_H;
         if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
         win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
-
+    function init() {
+        const area = document.getElementById('reel-touch-area');
+        let startY = 0, initialY = 0, isDrag = false;
+        area.addEventListener('touchstart', e => { startY = e.touches[0].pageY; initialY = currentY; isDrag = true; }, {passive: false});
+        area.addEventListener('touchmove', e => { if(isDrag) { e.preventDefault(); currentY = initialY + (e.touches[0].pageY - startY); applyScroll(); } }, {passive: false});
+        area.addEventListener('touchend', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
+        area.addEventListener('mousedown', e => { e.preventDefault(); startY = e.pageY; initialY = currentY; isDrag = true; });
+        window.addEventListener('mousemove', e => { if(isDrag) { currentY = initialY + (e.pageY - startY); applyScroll(); } });
+        window.addEventListener('mouseup', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
+        createReel(); update();
+    }
+    function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
-        // 赤いガイド枠（最上段）に位置するリール番号を特定
-        const offset = Math.round(-currentY / SYMBOL_H);
-        let pushPos = 21 - (offset % 21);
-        if (pushPos <= 0) pushPos += 21; if (pushPos > 21) pushPos -= 21;
+        // 判定枠（140px = 2マス分下）にあるシンボルのインデックスを特定
+        const cIdx = Math.round(-currentY / SYMBOL_H);
+        let pushPos = 21 - (cIdx % 21);
+        if (pushPos <= 0) pushPos += 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
-            const table = data[f.k];
-            if (!table) return; // HAZURE時にTOKを表示しない
-            
-            const slip = table[21 - pushPos];
+            const table = data[f.k]; if (!table) return;
+            // 押し位置に対するスベリを取得
+            let slip = table[21 - pushPos];
+            // 停止位置を計算
             let stopPos = pushPos - slip;
             if (stopPos <= 0) stopPos += 21;
 
-            const item = document.createElement('div'); item.className = 'flag-item';
-            item.innerHTML = `<div class="flag-name ${f.c}">${f.n}</div><div class="flag-slip">${slip}</div><div class="flag-stop">${stopPos}番</div>`;
+            const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
+            item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${slip}コマ → [${stopPos}]</div>`;
             list.appendChild(item);
         });
     }
-
-    let startY = 0, initialY = 0, isDrag = false;
-    const area = document.getElementById('reel-touch-area');
-    area.addEventListener('touchstart', e => { isDrag = true; startY = e.touches[0].pageY; initialY = currentY; e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchmove', e => { if(!isDrag) return; currentY = initialY + (e.touches[0].pageY - startY); applyScroll(); update(); e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchend', () => { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); });
-    area.addEventListener('mousedown', e => { isDrag = true; startY = e.pageY; initialY = currentY; });
-    window.addEventListener('mousemove', e => { if(!isDrag) return; currentY = initialY + (e.pageY - startY); applyScroll(); update(); });
-    window.addEventListener('mouseup', () => { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); });
-
-    function switchState(s) { 
-        currentState = s; 
-        document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); 
-        update(); 
-    }
-
-    createReel(); update();
+    init();
 </script>
 </body>
 </html>
