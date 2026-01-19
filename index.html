@@ -2,46 +2,52 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute UI Master</title>
+    <title>Versus Revise - Absolute Logic Check Tool</title>
     <style>
-        html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
-        * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
+        html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; }
+        .state-tabs { display: flex; width: 100%; gap: 2px; padding: 5px; flex-shrink: 0; }
+        .state-tab { flex: 1; text-align: center; padding: 12px 1px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #333; opacity: 0.4; transition: 0.2s; }
+        .state-tab.active { opacity: 1; border: 2px solid #fff; }
         
-        /* 状態ボタン配色：非選択時も色を維持 */
-        .state-tabs { display: flex; width: 100%; gap: 3px; margin-bottom: 8px; flex-shrink: 0; }
-        .state-tab { flex: 1; text-align: center; padding: 12px 1px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #222; opacity: 0.4; }
-        
-        #tab-hazure { background: #ffffff; color: #000; }
+        #tab-hazure { background: #444; color: #fff; }
         #tab-x_flag { background: #0000ff; color: #fff; }
         #tab-seven_flag { background: #ff0000; color: #fff; }
         #tab-bar_flag { background: #555555; color: #fff; }
 
-        .state-tab.active { opacity: 1; border: 2px solid #fff; }
-
-        .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
-        
-        /* 7枠・上詰め */
-        .reel-frame { width: 110px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; align-self: flex-start; }
-        #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; }
-        .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; }
-        .index-num { width: 28px; color: #ffd700; background: #222; text-align: center; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
+        .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; padding: 5px; gap: 5px; }
+        .reel-frame { width: 110px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; cursor: grab; }
+        .reel-frame:active { cursor: grabbing; }
+        #reel-window { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; }
+        .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; box-sizing: border-box; }
+        .index-num { width: 30px; color: #ffd700; background: #222; text-align: center; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
-        .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 28px); height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
+
+        /* 枠の定義（下段も赤枠に統一） */
+        .guide-box { position: absolute; right: 0; width: calc(100% - 30px); height: 70px; pointer-events: none; z-index: 10; box-sizing: border-box; }
+        .red-frame { border: 4px solid #ff0000; background: rgba(255,0,0,0.08); }
+        #guide-top { top: 140px; }
+        #guide-mid { top: 210px; }
+        #guide-btm { top: 280px; }
+
+        .result-area { flex: 1; background: #000; border: 1px solid #333; overflow-y: auto; }
+        .flag-item { display: flex; align-items: center; min-height: 48px; padding: 5px; border-bottom: 1px solid #222; }
+        .flag-name { font-size: 13px; width: 90px; flex-shrink: 0; font-weight: bold; }
+        .flag-data { font-size: 22px; font-family: 'Courier New', monospace; font-weight: bold; }
+
+        /* 成立役ごとのテキストカラー設定 */
+        .c-hazure .flag-name { color: #ffffff; }
+        .c-rep .flag-name { color: #00ccff; }
+        .c-bell .flag-name { color: #ffff00; }
+        .c-suika .flag-name { color: #00ff00; }
+        .c-cher .flag-name { color: #ff0066; }
+        .c-tok .flag-name { color: #cc00ff; }
         
-        .result-area { flex: 1; background: #000; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
-        .flag-item { display: flex; align-items: center; min-height: 45px; padding: 4px 8px; border-bottom: 1px solid #222; }
-        
-        .flag-name { font-size: 14px; font-weight: bold; width: 65px; flex-shrink: 0; color: #fff; text-shadow: 1px 1px 2px #000; }
-        .flag-data { font-size: 20px; font-family: 'Courier New', monospace; font-weight: bold; white-space: nowrap; text-shadow: 1px 1px 2px #000; }
-        
-        /* 表（背景）の色付け */
-        .c-hazure { background: rgba(255, 255, 255, 0.15); color: #fff; }
-        .c-rep { background: rgba(0, 204, 255, 0.25); color: #00ccff; } 
-        .c-bell { background: rgba(238, 238, 0, 0.25); color: #eeee00; } 
-        .c-suika { background: rgba(0, 255, 102, 0.25); color: #00ff66; } 
-        .c-cher { background: rgba(255, 0, 102, 0.25); color: #ff0066; } 
-        .c-tok { background: rgba(204, 51, 255, 0.25); color: #cc33ff; }
+        .c-hazure { background: rgba(255,255,255,0.05); }
+        .c-rep { background: rgba(0,204,255,0.05); }
+        .c-bell { background: rgba(255,255,0,0.05); }
+        .c-suika { background: rgba(0,255,0,0.05); }
+        .c-cher { background: rgba(255,0,100,0.05); }
+        .c-tok { background: rgba(200,0,255,0.05); }
     </style>
 </head>
 <body>
@@ -49,85 +55,116 @@
         <div id="tab-hazure" class="state-tab active" onclick="switchState('hazure')">ボーナス未成立</div>
         <div id="tab-x_flag" class="state-tab" onclick="switchState('x_flag')">Ｘビッグ成立</div>
         <div id="tab-seven_flag" class="state-tab" onclick="switchState('seven_flag')">７ビッグ成立</div>
-        <div id="tab-bar_flag" class="state-tab" onclick="switchState('bar_flag')">Reg成立</div>
+        <div id="tab-bar_flag" class="state-tab" onclick="switchState('bar_flag')">Regボーナス成立</div>
     </div>
     <div class="main-content">
-        <div id="reel-touch-area" class="reel-frame"><div class="center-guide"></div><div id="reel-window"></div></div>
+        <div id="reel-touch-area" class="reel-frame">
+            <div id="guide-top" class="guide-box red-frame"></div>
+            <div id="guide-mid" class="guide-box red-frame"></div>
+            <div id="guide-btm" class="guide-box red-frame"></div>
+            <div id="reel-window"></div>
+        </div>
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
+
 <script>
-    const MASTER_DATA = {
-        hazure: { hazure:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3], normal_rep:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], bellB:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], suikaA:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,2,1], suikaB:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,2,1], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3] },
-        x_flag: { hazure:[2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3], normal_rep:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,0,3,2,1], bellB:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], suikaA:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], suikaB:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], tokA:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1], tokB:[2,3,4,3,2,0,1,0,3,2,3,2,2,2,4,4,2,0,1,2,1], tokC:[2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1], tokD:[2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1], tokE:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1] },
-        seven_flag: { hazure:[0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1], normal_rep:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,2,3,0,1,0,1,2,3,4,2,0,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], bellB:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], suikaA:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], suikaB:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], cherA:[2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,1,0,1,2,3,4,3,0,1,0,1,2,3,2,3], tokA:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,2,0,1], tokB:[1,2,2,3,0,0,1,0,1,2,3,4,3,2,3,4,3,1,1,3,0], tokC:[2,3,0,3,2,0,1,0,1,2,3,4,2,2,4,4,2,2,2,2,1], tokD:[2,3,0,3,2,0,1,0,3,2,1,0,2,2,4,4,1,3,3,2,1], tokE:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,3,2,1] },
-        bar_flag: { hazure:[2,3,0,1,0,1,2,0,1,2,3,4,0,1,0,3,2,3,4,0,1], normal_rep:[3,0,0,0,3,3,2,2,1,2,3,4,2,0,1,2,3,4,0,1,2], jac_rep:[3,0,1,2,3,3,1,0,1,2,3,4,1,1,1,1,3,4,0,1,2], rt_rep:[3,0,1,2,3,3,1,0,1,2,3,4,1,1,0,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,1,0,1,2,3,0,1], bellB:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,1,0,1,2,3,0,1], suikaA:[2,3,0,1,0,1,2,0,1,2,3,4,0,1,0,3,2,3,4,0,1], suikaB:[2,3,0,1,0,1,2,0,1,2,0,4,1,1,0,3,2,3,4,0,1], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], tokA:[0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1], tokB:[0,1,2,3,0,1,1,0,1,2,3,4,3,3,4,4,2,3,4,2,1], tokC:[0,1,2,3,0,1,1,0,1,2,3,4,3,3,4,4,2,3,4,2,1], tokD:[0,1,2,3,0,1,1,0,1,0,1,2,3,3,4,4,2,3,4,2,1], tokE:[0,1,2,3,0,1,1,0,1,2,3,4,0,1,0,1,2,3,4,2,1] }
-    };
+// --- [データ部] ---
+const MASTER_DATA = {
+    hazure: { hz:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3], nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jr:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3], rr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], bb:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], sa:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,2,1], sb:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,2,1], ca:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cb:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], ta:Array(21).fill(null),tb:Array(21).fill(null),tc:Array(21).fill(null),td:Array(21).fill(null),te:Array(21).fill(null) },
+    x_flag: { hz:[2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3], nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jr:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3], rr:[3,0,1,2,3,0,1,3,1,1,1,1,1,1,1,2,3,4,0,1,2], ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,0,3,2,1], bb:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], sa:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], sb:[2,3,4,3,2,1,4,3,1,0,3,2,0,4,2,0,1,0,1,0,3], ca:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cb:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], ta:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1], tb:[2,3,4,3,2,0,1,0,3,2,3,2,2,2,4,4,2,0,1,2,1], tc:[2,3,4,3,2,0,1,0,3,2,3,0,2,2,4,4,2,0,1,2,1], td:[2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1], te:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1] },
+    seven_flag: { hz:[0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1], nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jr:[0,1,2,3,0,1,1,2,3,0,1,2,3,0,1,2,3,4,0,1,3], rr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], ba:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], bb:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,1,2,3,0,1], sa:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], sb:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1], ca:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,1,1,3,3,1,2,3], cb:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,1,1,3,3,1,2,3], ta:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,2,0,1], tb:[1,2,2,3,0,0,1,0,1,2,3,4,3,2,3,4,3,1,1,3,0], tc:[2,3,0,3,2,0,1,0,1,2,3,4,2,2,4,4,2,2,2,2,1], td:[2,3,0,3,2,0,1,0,3,2,1,0,2,2,4,4,1,3,3,2,1], te:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,3,2,1] },
+    bar_flag: { hz:[2,3,3,3,2,2,2,2,2,2,0,0,0,0,0,0,1,2,3,4,0], nr:[3,0,0,0,3,3,3,3,3,3,1,1,1,1,1,1,1,0,1,2,3], jr:[3,0,0,0,3,3,3,3,3,3,2,2,2,2,2,2,2,1,2,3,4], rr:[3,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,4,0], ba:[2,3,3,3,2,2,0,0,2,2,0,0,0,0,0,0,1,2,3,0,1], bb:[2,3,3,3,2,2,0,0,2,2,0,0,0,0,0,0,1,2,3,0,1], sa:[2,3,3,3,2,2,0,0,2,2,2,2,2,2,2,2,2,3,4,0,0], sb:[2,3,3,3,2,2,0,0,2,2,2,2,2,2,2,2,2,3,4,0,0], ca:[2,3,3,3,2,2,2,2,2,2,0,0,0,0,0,0,4,0,1,2,2], cb:[2,3,3,3,2,2,2,2,2,2,0,0,0,0,0,0,4,0,1,2,2], ta:[0,1,2,3,0,1,1,0,1,1,4,4,4,4,4,4,4,3,4,4,1], tb:[0,1,2,3,0,1,1,0,1,1,4,4,4,4,4,4,4,3,4,4,1], tc:[0,1,2,3,0,1,1,0,1,1,4,4,4,4,4,4,4,3,4,4,1], td:[0,1,2,3,0,1,1,0,0,1,0,2,2,0,2,4,4,3,4,4,1], te:[0,1,2,3,0,1,1,0,1,1,4,4,4,4,4,4,4,3,4,4,1] }
+};
 
-    const FLAGS = [
-        {k:"hazure",n:"ハズレ",c:"hazure"},{k:"normal_rep",n:"通リプ",c:"rep"},{k:"jac_rep",n:"JACリ",c:"rep"},{k:"rt_rep",n:"RTリ",c:"rep"},
-        {k:"bellA",n:"ベルA",c:"bell"},{k:"bellB",n:"ベルB",c:"bell"},{k:"suikaA",n:"スイA",c:"suika"},{k:"suikaB",n:"スイB",c:"suika"},
-        {k:"cherA",n:"チェA",c:"cher"},{k:"cherB",n:"チェB",c:"cher"},{k:"tokA",n:"特A",c:"tok"},{k:"tokB",n:"特B",c:"tok"},
-        {k:"tokC",n:"特C",c:"tok"},{k:"tokD",n:"特D",c:"tok"},{k:"tokE",n:"特E",c:"tok"}
-    ];
+const FLAGS = [
+    {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプレイ",c:"rep"},{k:"jr",n:"ＪＡＣリプ",c:"rep"},{k:"rr",n:"ＲＴリプレイ",c:"rep"},
+    {k:"ba",n:"ベルＡ",c:"bell"},{k:"bb",n:"ベルＢ",c:"bell"},{k:"sa",n:"スイカＡ",c:"suika"},{k:"sb",n:"スイカＢ",c:"suika"},
+    {k:"ca",n:"チェリーＡ",c:"cher"},{k:"cb",n:"チェリーＢ",c:"cher"},{k:"ta",n:"特殊役Ａ",c:"tok"},{k:"tb",n:"特殊役Ｂ",c:"tok"},
+    {k:"tc",n:"特殊役Ｃ",c:"tok"},{k:"td",n:"特殊役Ｄ",c:"tok"},{k:"te",n:"特殊役Ｅ",c:"tok"}
+];
 
-    let currentY = -210, currentState = 'hazure';
-    const SYMBOL_H = 70;
+const REEL_LEN = 21;
+const solvedTable = {};
+
+function buildStaticTable() {
+    for (const state in MASTER_DATA) {
+        solvedTable[state] = Array.from({length: REEL_LEN}, () => ({}));
+        for (const f of FLAGS) {
+            const data = MASTER_DATA[state][f.k];
+            data.forEach((slip, pushIdx) => {
+                if (slip === null) return;
+                let stopIdx = (pushIdx - slip + REEL_LEN) % REEL_LEN;
+                if (!solvedTable[state][stopIdx][f.k]) solvedTable[state][stopIdx][f.k] = [];
+                solvedTable[state][stopIdx][f.k].push(slip);
+            });
+        }
+    }
+}
+
+let currentBottomIdx = 2; 
+let currentState = 'hazure';
+
+function update() {
+    const list = document.getElementById('flag-list');
+    list.innerHTML = '';
+    const flagsAtPos = solvedTable[currentState][currentBottomIdx];
+    
+    FLAGS.forEach(f => {
+        if (flagsAtPos[f.k]) {
+            const item = document.createElement('div');
+            item.className = `flag-item c-${f.c}`;
+            const uniqueSlips = [...new Set(flagsAtPos[f.k])].sort((a,b)=>a-b);
+            item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${uniqueSlips.map(s=>`[${s}]`).join('')}</div>`;
+            list.appendChild(item);
+        }
+    });
+
     const win = document.getElementById('reel-window');
+    const drawTopIdx = (currentBottomIdx - 4 + REEL_LEN) % REEL_LEN;
+    win.style.transform = `translate3d(0, -${drawTopIdx * 70}px, 0)`;
+}
 
-    function createReel() {
-        win.innerHTML = '';
-        for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) {
+function init() {
+    buildStaticTable();
+    const win = document.getElementById('reel-window');
+    for (let l = 0; l < 3; l++) {
+        for (let i = 0; i < REEL_LEN; i++) {
             const n = 21 - i;
             const d = document.createElement('div'); d.className = 'symbol';
-            const bgPos = (21 - n) * 5; 
-            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${bgPos}%"></div>`;
+            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%"></div>`;
             win.appendChild(d);
-        }}
-        applyScroll();
+        }
     }
-    function applyScroll() {
-        const h = 21 * SYMBOL_H;
-        if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
-        win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
-    }
-    function init() {
-        const area = document.getElementById('reel-touch-area');
-        let startY = 0, initialY = 0, isDrag = false;
-        area.addEventListener('touchstart', e => { startY = e.touches[0].pageY; initialY = currentY; isDrag = true; e.preventDefault(); }, {passive: false});
-        area.addEventListener('touchmove', e => { if(isDrag) { currentY = initialY + (e.touches[0].pageY - startY); applyScroll(); e.preventDefault(); } }, {passive: false});
-        area.addEventListener('touchend', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
-        area.addEventListener('mousedown', e => { e.preventDefault(); startY = e.pageY; initialY = currentY; isDrag = true; });
-        window.addEventListener('mousemove', e => { if(isDrag) { currentY = initialY + (e.pageY - startY); applyScroll(); } });
-        window.addEventListener('mouseup', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
-        createReel(); update();
-    }
-    function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
-    
-    function update() {
-        const list = document.getElementById('flag-list'); list.innerHTML = '';
-        const offset = Math.round(-currentY / SYMBOL_H);
-        let targetStopPos = 21 - ((offset + 4) % 21);
-        if (targetStopPos <= 0) targetStopPos += 21;
 
-        const data = MASTER_DATA[currentState];
-        FLAGS.forEach(f => {
-            const table = data[f.k]; if (!table) return;
-            const res = [];
-            for (let pushPos = 1; pushPos <= 21; pushPos++) {
-                let slip = table[21 - pushPos];
-                let calcStop = ((pushPos + slip - 1) % 21) + 1;
-                if (calcStop === targetStopPos) {
-                    res.push(`[${slip}]`);
-                }
-            }
-            if (res.length > 0) {
-                const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
-                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${res.join('')}</div>`;
-                list.appendChild(item);
-            }
-        });
-    }
-    init();
+    const area = document.getElementById('reel-touch-area');
+    let isDragging = false, startY = 0, startIdx = 0;
+
+    const onStart = (y) => { isDragging = true; startY = y; startIdx = currentBottomIdx; };
+    const onMove = (y) => {
+        if (!isDragging) return;
+        const diff = Math.round((y - startY) / 70);
+        currentBottomIdx = (startIdx - diff + (REEL_LEN * 10)) % REEL_LEN;
+        update();
+    };
+    const onEnd = () => { isDragging = false; };
+
+    area.addEventListener('mousedown', e => onStart(e.pageY));
+    window.addEventListener('mousemove', e => onMove(e.pageY));
+    window.addEventListener('mouseup', onEnd);
+    area.addEventListener('touchstart', e => { onStart(e.touches[0].pageY); e.preventDefault(); }, {passive:false});
+    area.addEventListener('touchmove', e => { onMove(e.touches[0].pageY); e.preventDefault(); }, {passive:false});
+    area.addEventListener('touchend', onEnd);
+
+    update();
+}
+
+function switchState(s) {
+    currentState = s;
+    document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s));
+    update();
+}
+
+init();
 </script>
 </body>
 </html>
