@@ -3,23 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Final Precision Build]</title>
+    <title>Versus Revise - Absolute Data Checker [Fixed Build]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
         .state-tabs { display: flex; width: 100%; gap: 3px; margin-bottom: 8px; flex-shrink: 0; }
         .state-tab { flex: 1; text-align: center; padding: 10px 1px; font-size: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #444; }
-        .tab-active { background: #eee !important; color: #000 !important; border-color: #fff; }
-        .reel-selector { display: flex; gap: 10px; margin-bottom: 5px; }
-        .reel-btn { flex: 1; padding: 5px; font-size: 10px; background: #333; color: #fff; border: 1px solid #666; border-radius: 4px; }
-        .reel-btn.active { background: #ffd700; color: #000; }
+        .tab-hazure { background: rgba(255, 255, 255, 0.1); color: #aaa; }
+        .tab-x_flag { background: rgba(48, 79, 254, 0.15); color: #304ffe; }
+        .tab-seven_flag { background: rgba(213, 0, 0, 0.15); color: #d50000; }
+        .tab-bar_flag { background: rgba(150, 150, 150, 0.15); color: #777; }
+        .tab-hazure.active { background: #eee !important; color: #000; border-color: #fff; }
+        .tab-x_flag.active { background: #304ffe !important; color: #fff; border-color: #fff; }
+        .tab-seven_flag.active { background: #d50000 !important; color: #fff; border-color: #fff; }
+        .tab-bar_flag.active { background: #555 !important; color: #fff; border-color: #fff; }
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
         .reel-frame { width: 110px; height: 100%; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
-        #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; }
+        #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; transform: translateZ(0); }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; }
         .index-num { width: 28px; color: #ffd700; background: #222; text-align: center; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
-        .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 28px); height: 70px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.1); pointer-events: none; z-index: 100; }
+        .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 28px); height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .flag-item { display: flex; align-items: center; min-height: 50px; padding: 4px 8px; border-bottom: 1px solid #222; }
         .flag-name { font-size: 14px; font-weight: bold; width: 65px; flex-shrink: 0; }
@@ -34,20 +38,13 @@
         <div id="tab-seven_flag" class="state-tab tab-seven_flag" onclick="switchState('seven_flag')">７成立</div>
         <div id="tab-bar_flag" class="state-tab tab-bar_flag" onclick="switchState('bar_flag')">Reg成立</div>
     </div>
-    <div class="reel-selector">
-        <button id="btn-left" class="reel-btn" onclick="switchReel('left')">左リール</button>
-        <button id="btn-right" class="reel-btn active" onclick="switchReel('right')">右リール</button>
-    </div>
     <div class="main-content">
         <div id="reel-touch-area" class="reel-frame"><div class="center-guide"></div><div id="reel-window"></div></div>
         <div class="result-area"><div id="flag-list"></div></div>
     </div>
 <script>
-    // 正規配列画像に基づき定義 (21番〜1番)
-    const REELS = {
-        right: ["チェリー","ベル","スイカ","リプレイ","チェリー","赤7","ベル","スイカ","リプレイ","チェリー","ベル","リプレイ","BAR","チェリー","ベル","スイカ","リプレイ","X","ベル","スイカ","リプレイ"],
-        left: ["リプレイ","チェリー","X","ベル","スイカ","リプレイ","ベル","スイカ","赤7","ベル","リプレイ","スイカ","赤7","ベル","リプレイ","スイカ","BAR","ベル","リプレイ","スイカ","BAR"]
-    };
+    // 右リール正規画像に基づく配列 (21番〜1番)
+    const SYMBOLS_LIST = ["チェリー","ベル","スイカ","リプレイ","チェリー","赤7","ベル","スイカ","リプレイ","チェリー","ベル","リプレイ","BAR","チェリー","ベル","スイカ","リプレイ","X","ベル","スイカ","リプレイ"];
 
     const GOD_DATA = {
         hazure: { hazure:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3], normal_rep:[3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], jac_rep:[0,1,2,1,0,1,2,3,4,0,1,2,2,1,2,3,4,0,1,2,3], rt_rep:[3,0,1,0,3,3,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2], bellA:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1], bellB:[2,3,0,1,2,2,4,0,1,2,3,0,1,2,3,0,0,2,3,0,1], suikaA:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1], suikaB:[0,3,0,3,2,1,4,0,4,0,3,4,0,4,0,0,2,2,4,0,1], cherA:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3], cherB:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3] },
@@ -58,18 +55,17 @@
 
     const FLAGS = [{k:"hazure",n:"ハズレ",c:"hazure"},{k:"normal_rep",n:"通リプ",c:"rep"},{k:"jac_rep",n:"JACリ",c:"rep"},{k:"rt_rep",n:"RTリ",c:"rep"},{k:"bellA",n:"ベルA",c:"bell"},{k:"bellB",n:"ベルB",c:"bell"},{k:"suikaA",n:"スイA",c:"suika"},{k:"suikaB",n:"スイB",c:"suika"},{k:"cherA",n:"チェA",c:"cher"},{k:"cherB",n:"チェB",c:"cher"},{k:"tokA",n:"特A",c:"tok"},{k:"tokB",n:"特B",c:"tok"},{k:"tokC",n:"特C",c:"tok"},{k:"tokD",n:"特D",c:"tok"},{k:"tokE",n:"特E",c:"tok"}];
 
-    let currentY = -210, currentState = 'hazure', currentReel = 'right';
+    let currentY = -210, currentState = 'hazure';
     const SYMBOL_H = 70;
     const win = document.getElementById('reel-window');
 
     function createReel() {
         win.innerHTML = '';
-        const list = REELS[currentReel];
         for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) {
             const n = 21 - i;
             const d = document.createElement('div'); d.className = 'symbol';
             const bgPos = (21 - n) * 5; 
-            // 修正：文字を完全に取って画像のみに
+            // 文字列なし。画像のみ。
             d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${bgPos}%"></div>`;
             win.appendChild(d);
         }}
@@ -92,24 +88,22 @@
         createReel(); update();
     }
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
-    function switchReel(r) { currentReel = r; document.getElementById('btn-left').classList.toggle('active', r==='left'); document.getElementById('btn-right').classList.toggle('active', r==='right'); createReel(); update(); }
     
-    // ロジック修正：逆引き（減算）
+    // ロジック：逆引き（減算）
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
         const offset = Math.round(-currentY / SYMBOL_H);
-        // 赤枠内の最上段シンボル(140px)を判定基準とする = offset + 2
-        let targetStopPos = 21 - ((offset + 2) % 21);
+        // 赤枠の中段(あるいは指示された判定基準位置)
+        let targetStopPos = 21 - ((offset + 1) % 21);
         if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
         FLAGS.forEach(f => {
             const table = data[f.k]; if (!table) return;
             const res = [];
-            // 全押し位置(pushPos)をチェック
             for (let pushPos = 1; pushPos <= 21; pushPos++) {
                 let slip = table[21 - pushPos];
-                // 停止位置 ＝ 押し位置 － スベリ (境界跨ぎ対応)
+                // 停止位置 ＝ 押し位置 － スベリ
                 let calcStop = pushPos - slip;
                 if (calcStop <= 0) calcStop += 21;
                 
@@ -119,6 +113,7 @@
             }
             if (res.length > 0) {
                 const item = document.createElement('div'); item.className = `flag-item c-${f.c}`;
+                // 成立役文字の拡大
                 item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${res.join(' ')}</div>`;
                 list.appendChild(item);
             }
