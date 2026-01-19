@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Data Checker [Fixed Physics Build]</title>
+    <title>Versus Revise - Debug Tool [Center 3-Frame / 7-View]</title>
     <style>
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; display: flex; flex-direction: column; }
         * { box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; }
@@ -17,17 +17,26 @@
         .tab-x_flag.active { background: #304ffe !important; color: #fff; border-color: #fff; }
         .tab-seven_flag.active { background: #d50000 !important; color: #fff; border-color: #fff; }
         .tab-bar_flag.active { background: #555 !important; color: #fff; border-color: #fff; }
+        
         .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; }
-        .reel-frame { width: 115px; height: 100%; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; }
+        
+        /* リール表示エリア：7枠分（490px）を表示 */
+        .reel-frame { width: 115px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; overflow: hidden; position: relative; align-self: center; }
         #reel-window { position: absolute; width: 100%; top: 0; left: 0; will-change: transform; transform: translateZ(0); }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #1a1a1a; width: 100%; }
         .index-num { width: 30px; color: #ffd700; background: #222; text-align: center; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
+        
+        /* 中心3枠のガイド：中段(140px-350px)を囲む */
         .center-guide { position: absolute; top: 140px; right: 0; width: calc(100% - 30px); height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 100; }
+        
         .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .flag-item { display: flex; align-items: center; min-height: 55px; padding: 6px 8px; border-bottom: 1px solid #222; }
-        .flag-name { font-size: 14px; font-weight: bold; width: 65px; flex-shrink: 0; }
-        .flag-data { font-size: 28px; color: #fff; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: -1px; white-space: normal; line-height: 1.1; }
+        .flag-item { display: flex; align-items: center; min-height: 45px; padding: 4px 8px; border-bottom: 1px solid #222; }
+        .flag-name { font-size: 12px; font-weight: bold; width: 55px; flex-shrink: 0; }
+        
+        /* 文字サイズを小さく調整 */
+        .flag-data { font-size: 22px; color: #fff; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: -0.5px; white-space: normal; line-height: 1.1; }
+        
         .c-rep { background: rgba(0, 204, 255, 0.1); color: #00ccff; } .c-bell { background: rgba(238, 238, 0, 0.1); color: #eeee00; } .c-suika { background: rgba(0, 255, 102, 0.1); color: #00ff66; } .c-cher { background: rgba(255, 0, 102, 0.1); color: #ff0066; } .c-hazure { background: rgba(255, 255, 255, 0.05); color: #ccc; } .c-tok { background: rgba(204, 51, 255, 0.1); color: #cc33ff; }
     </style>
 </head>
@@ -69,11 +78,13 @@
         }}
         applyScroll();
     }
+
     function applyScroll() {
         const h = 21 * SYMBOL_H;
         if (currentY > 0) currentY -= h; if (currentY < -h) currentY += h;
         win.style.transform = `translate3d(0, ${currentY - h}px, 0)`;
     }
+
     function init() {
         const area = document.getElementById('reel-touch-area');
         let startY = 0, initialY = 0, isDrag = false;
@@ -85,13 +96,15 @@
         window.addEventListener('mouseup', () => { if(isDrag) { isDrag = false; currentY = Math.round(currentY/SYMBOL_H)*SYMBOL_H; applyScroll(); update(); } });
         createReel(); update();
     }
+
     function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
     
-    // 正しい物理逆引き: 狙った位置 + 滑り = 止まった位置
     function update() {
         const list = document.getElementById('flag-list'); list.innerHTML = '';
         const offset = Math.round(-currentY / SYMBOL_H);
-        let targetStopPos = 21 - ((offset + 4) % 21); // 下段の番号を基準
+        
+        /* 判定基準：赤いガイド枠の中段(4コマ目)を停止基準とする */
+        let targetStopPos = 21 - ((offset + 3) % 21);
         if (targetStopPos <= 0) targetStopPos += 21;
 
         const data = GOD_DATA[currentState];
@@ -100,11 +113,9 @@
             const res = [];
             for (let pushPos = 1; pushPos <= 21; pushPos++) {
                 let slip = table[21 - pushPos];
-                // 物理的な移動: (狙った位置 + スベリ)
-                let calcStop = pushPos + slip;
+                let calcStop = pushPos + slip; // 物理加算：(押し+スベリ)=停止
                 if (calcStop > 21) calcStop -= 21;
                 
-                // 停止位置が一致する場合のみ表示
                 if (calcStop === targetStopPos) {
                     res.push(`[${pushPos}:${slip}]`);
                 }
