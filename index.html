@@ -26,8 +26,8 @@
         .state-tab:last-child { border-right: none; }
         .state-tab.active { opacity: 1; border-bottom: 4px solid #fff; }
         
-        /* タブの色設定（ボーナス未成立を白に） */
-        #tab-hazure { background: #ffffff; color: #000000; } /* 白背景・黒文字 */
+        /* タブの色設定 */
+        #tab-hazure { background: #ffffff; color: #000000; }
         #tab-x_flag { background: #00008b; color: #fff; }
         #tab-seven_flag { background: #8b0000; color: #fff; }
         #tab-bar_flag { background: #333; color: #ccc; }
@@ -51,18 +51,18 @@
         /* 成立役アイテム */
         .flag-item { 
             display: flex; align-items: center; 
-            height: 44px; /* 高さを少し広げる */
+            height: 44px; 
             padding: 0 6px; border-bottom: 1px solid rgba(0,0,0,0.5);
             font-size: 13px;
             white-space: nowrap;
         }
         
-        /* 役名の文字サイズを大きく */
+        /* 役名の文字サイズ */
         .flag-name { 
-            width: 85px; /* 特殊役が入るように幅を拡張 */
+            width: 85px; 
             flex-shrink: 0; 
             font-weight: bold; 
-            font-size: 15px; /* 文字サイズUP */
+            font-size: 15px; 
             text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
         }
         
@@ -84,10 +84,10 @@
         .c-bell   { background: #665500; color: #ffff00; }
         /* スイカ */
         .c-suika  { background: #004400; color: #00ff00; }
-        /* チェリー: 赤 */
-        .c-cher   { background: #cc0000; color: #ffffff; }
-        /* 特殊役: 紫 */
-        .c-tok    { background: #800080; color: #ffffff; }
+        /* チェリー: チェリーっぽい赤紫背景+ピンク文字 */
+        .c-cher   { background: #550022; color: #ff99cc; }
+        /* 特殊役: 紫背景+薄紫文字 */
+        .c-tok    { background: #330044; color: #ffccff; }
 
 
         /* 3. 右側: リール */
