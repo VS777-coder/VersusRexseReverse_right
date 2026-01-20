@@ -5,110 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Versus Revise - Absolute Logic Check Tool</title>
     <style>
-        /* ベース設定 */
+        /* 全体設定: スマホの縦長画面にフィットさせる */
         html, body { 
             width: 100%; height: 100%; margin: 0; padding: 0; 
-            background: #121212; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* 1. 状態ボタン（大きめ） */
+        /* 1. 上部: 状態タブ（押しやすく大きく） */
         .state-tabs { 
-            display: flex; width: 100%; height: 60px; /* 高さ確保 */
-            flex-shrink: 0; border-bottom: 2px solid #000;
+            display: flex; width: 100%; height: 60px; flex-shrink: 0; 
+            border-bottom: 2px solid #333;
         }
         .state-tab { 
             flex: 1; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: bold; cursor: pointer; 
-            border-right: 1px solid #222; opacity: 0.5; transition: 0.2s;
-            line-height: 1.2; padding: 0 5px; text-align: center;
+            font-size: 11px; font-weight: bold; cursor: pointer; 
+            border-right: 1px solid #222; opacity: 0.6; transition: 0.2s;
+            line-height: 1.2; text-align: center; padding: 0 2px;
         }
         .state-tab:last-child { border-right: none; }
-        .state-tab.active { opacity: 1; box-shadow: inset 0 -4px 0 rgba(255,255,255,0.5); }
+        .state-tab.active { opacity: 1; border-bottom: 4px solid #fff; }
         
         #tab-hazure { background: #333; color: #eee; }
-        #tab-x_flag { background: #00008b; color: #fff; } /* 濃い青 */
-        #tab-seven_flag { background: #8b0000; color: #fff; } /* 濃い赤 */
-        #tab-bar_flag { background: #333; border-bottom: 4px solid #999; color: #fff; } /* REGっぽく */
+        #tab-x_flag { background: #00008b; color: #fff; }
+        #tab-seven_flag { background: #8b0000; color: #fff; }
+        #tab-bar_flag { background: #333; color: #ccc; }
 
-        /* メインエリア（縦並び） */
+        /* メインエリア: 左右分割 */
         .main-content { 
-            flex: 1; display: flex; flex-direction: column; 
-            overflow: hidden; padding: 10px; gap: 10px;
+            flex: 1; display: flex; flex-direction: row; /* 横並びに戻す */
+            overflow: hidden; padding: 5px; gap: 5px; background: #121212;
         }
 
-        /* 2. リール表示エリア（最大化・中央寄せ） */
-        .reel-container {
-            flex-shrink: 0; display: flex; justify-content: center;
-            padding-bottom: 5px; border-bottom: 1px solid #333;
+        /* 2. 左側: 成立役一覧 */
+        .result-area { 
+            flex: 1; /* 残りの幅を全部使う */
+            background: #000; 
+            border: 1px solid #333; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: column;
         }
+
+        /* 成立役アイテムのデザイン */
+        .flag-item { 
+            display: flex; align-items: center; 
+            height: 40px; /* 少し高さを確保 */
+            padding: 0 4px; border-bottom: 1px solid rgba(0,0,0,0.5);
+            font-size: 13px;
+            white-space: nowrap; /* 全体的に折り返し禁止 */
+        }
+        .flag-name { 
+            width: 60px; flex-shrink: 0; font-weight: bold; 
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+        }
+        .flag-data { 
+            flex: 1; 
+            font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; 
+            text-align: right; 
+            letter-spacing: -1px; /* 数字を詰め込む */
+            overflow: hidden; /* はみ出し防止 */
+        }
+
+        /* 役ごとのカラーリング */
+        .c-hazure { background: #444; color: #fff; }
+        .c-rep    { background: #004488; color: #00ffff; }
+        .c-bell   { background: #665500; color: #ffff00; }
+        .c-suika  { background: #004400; color: #00ff00; }
+        .c-cher   { background: #550022; color: #ff99cc; }
+        .c-tok    { background: #330044; color: #ffccff; }
+
+        /* 3. 右側: リール（固定幅） */
         .reel-frame { 
-            width: 120px; /* 少し幅広に */
-            height: 490px; 
-            background: #000; border: 4px solid #444; border-radius: 4px; 
+            width: 100px; /* 必要最低限の幅 */
+            height: 490px; /* 7コマ分 (70px * 7) */
+            background: #000; border: 2px solid #444; border-radius: 4px; 
             overflow: hidden; position: relative; 
-            cursor: grab; touch-action: none; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            flex-shrink: 0; /* 縮小させない */
+            cursor: grab; touch-action: none;
         }
         .reel-frame:active { cursor: grabbing; }
-        
+
         #reel-window { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; will-change: transform; }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #222; width: 100%; box-sizing: border-box; }
         .index-num { 
-            width: 30px; color: #aaa; background: #1a1a1a; 
-            text-align: center; font-size: 14px; font-weight: bold; 
+            width: 25px; color: #d4af37; background: #111; 
+            text-align: center; font-size: 12px; font-weight: bold; 
             display: flex; align-items: center; justify-content: center; 
             border-right: 1px solid #333; 
         }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
 
-        /* 3. 赤枠（3枠独立・視認性強化） */
+        /* 4. 赤枠: 3コマ分を囲む大きな1つの枠 */
         .guide-box { 
-            position: absolute; right: 0; width: calc(100% - 30px); height: 70px; 
+            position: absolute; right: 0; 
+            width: calc(100% - 25px); /* 数字部分を除く幅 */
+            height: 210px; /* 70px * 3コマ分 */
+            top: 140px; /* 上から2コマ分(140px)空けた位置から開始 */
             pointer-events: none; z-index: 10; box-sizing: border-box; 
-            border: 3px solid #ff0000; /* 赤枠を太く */
-            background: rgba(255, 0, 0, 0.05); /* うっすら赤背景 */
-            box-shadow: inset 0 0 5px rgba(255,0,0,0.3);
-        }
-        #guide-top { top: 140px; }
-        #guide-mid { top: 210px; }
-        #guide-btm { top: 280px; }
-
-        /* 4. 結果一覧エリア（スクロール） */
-        .result-area { 
-            flex: 1; background: #1a1a1a; 
-            border: 1px solid #333; border-radius: 4px;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
-        }
-
-        /* 成立役ごとのスタイル */
-        .flag-item { 
-            display: flex; align-items: center; justify-content: space-between;
-            min-height: 44px; padding: 0 10px; 
-            border-bottom: 1px solid rgba(0,0,0,0.3);
-            font-size: 14px;
-        }
-        
-        /* 5. 色分け設定 (背景色と文字色) */
-        .c-hazure { background: #333333; color: #fff; }
-        .c-rep    { background: #003366; color: #00ffff; } /* リプ: 青背景+水色文字 */
-        .c-bell   { background: #443300; color: #ffeb3b; } /* ベル: 茶背景+黄色文字 */
-        .c-suika  { background: #003300; color: #00ff00; } /* スイカ: 緑背景+緑文字 */
-        .c-cher   { background: #440000; color: #ff99cc; } /* チェリー: 赤背景+ピンク文字 */
-        .c-tok    { background: #2a0033; color: #ffccff; } /* 特殊役: 紫背景+薄紫文字 */
-
-        .flag-name { font-weight: bold; flex-shrink: 0; margin-right: 10px; }
-        
-        /* 6. スベリコマ数 (1行表示・崩れ防止) */
-        .flag-data { 
-            font-family: 'Courier New', monospace; 
-            font-weight: bold; font-size: 18px; 
-            white-space: nowrap; /* 折り返し禁止 */
-            letter-spacing: -1px; /* 少し詰めて入るようにする */
-            text-align: right;
-            flex: 1;
-            overflow: hidden;
-            text-overflow: clip;
+            border: 4px solid #ff0000; /* 赤枠 */
+            background: rgba(255, 0, 0, 0.1); /* 内部を薄く赤く */
+            box-shadow: inset 0 0 10px rgba(255,0,0,0.5);
         }
 
     </style>
@@ -122,26 +119,20 @@
     </div>
 
     <div class="main-content">
-        <div class="reel-container">
-            <div id="reel-touch-area" class="reel-frame">
-                <div id="guide-top" class="guide-box"></div>
-                <div id="guide-mid" class="guide-box"></div>
-                <div id="guide-btm" class="guide-box"></div>
-                <div id="reel-window"></div>
-            </div>
-        </div>
-
         <div class="result-area">
             <div id="flag-list"></div>
+        </div>
+
+        <div id="reel-touch-area" class="reel-frame">
+            <div class="guide-box"></div>
+            <div id="reel-window"></div>
         </div>
     </div>
 
 <script>
-// --- [データ部: 最終完全版] ---
-// 貴方と確認した「絶対の正解」データのみを使用しています。
-
+// --- [データ部: 完全正解版] ---
 const MASTER_DATA = {
-    // 1. ボーナス未成立 (提供データ通り)
+    // 1. ボーナス未成立 (OK)
     hazure: {
         hz:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
@@ -155,7 +146,7 @@ const MASTER_DATA = {
         cb:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
         ta:Array(21).fill(null), tb:Array(21).fill(null), tc:Array(21).fill(null), td:Array(21).fill(null), te:Array(21).fill(null)
     },
-    // 2. Xビッグ成立 (提供データ通り・修正済み)
+    // 2. Xビッグ成立 (OK)
     x_flag: {
         hz:[2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
@@ -173,14 +164,13 @@ const MASTER_DATA = {
         td:[2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1],
         te:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1]
     },
-    // 3. 7ビッグ成立 (画像エビデンス+提供修正版で確定したデータ)
-    // baの16番は「3」
+    // 3. 7ビッグ成立 (画像エビデンス + 修正適用版)
     seven_flag: {
         hz:[0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
         jr:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3],
         rr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
-        ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1], // 16番(idx5)=3
+        ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1], // 16番=3
         bb:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1],
         sa:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
         sb:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
@@ -213,10 +203,10 @@ const MASTER_DATA = {
 };
 
 const FLAGS = [
-    {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプレイ",c:"rep"},{k:"jr",n:"ＪＡＣリプ",c:"rep"},{k:"rr",n:"ＲＴリプレイ",c:"rep"},
+    {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプ",c:"rep"},{k:"jr",n:"JACリプ",c:"rep"},{k:"rr",n:"RTリプ",c:"rep"},
     {k:"ba",n:"ベルＡ",c:"bell"},{k:"bb",n:"ベルＢ",c:"bell"},{k:"sa",n:"スイカＡ",c:"suika"},{k:"sb",n:"スイカＢ",c:"suika"},
-    {k:"ca",n:"チェリーＡ",c:"cher"},{k:"cb",n:"チェリーＢ",c:"cher"},{k:"ta",n:"特殊役Ａ",c:"tok"},{k:"tb",n:"特殊役Ｂ",c:"tok"},
-    {k:"tc",n:"特殊役Ｃ",c:"tok"},{k:"td",n:"特殊役Ｄ",c:"tok"},{k:"te",n:"特殊役Ｅ",c:"tok"}
+    {k:"ca",n:"チェリＡ",c:"cher"},{k:"cb",n:"チェリＢ",c:"cher"},{k:"ta",n:"特役Ａ",c:"tok"},{k:"tb",n:"特役Ｂ",c:"tok"},
+    {k:"tc",n:"特役Ｃ",c:"tok"},{k:"td",n:"特役Ｄ",c:"tok"},{k:"te",n:"特役Ｅ",c:"tok"}
 ];
 
 const REEL_LEN = 21;
@@ -231,7 +221,6 @@ function buildStaticTable() {
             const data = MASTER_DATA[state][f.k];
             data.forEach((slip, pushIdx) => {
                 if (slip === null) return;
-                // ロジック補正なし (データが正しいのでそのまま計算)
                 let stopIdx = mod(pushIdx - slip, REEL_LEN);
                 if (!solvedTable[state][stopIdx][f.k]) solvedTable[state][stopIdx][f.k] = [];
                 solvedTable[state][stopIdx][f.k].push(slip);
@@ -255,8 +244,8 @@ function update() {
             if (flagsAtPos[f.k]) {
                 const item = document.createElement('div');
                 item.className = `flag-item c-${f.c}`;
-                const uniqueSlips = [...new Set(flagsAtPos[f.k])].sort((a,b)=>a-b);
-                // スマホで見やすいように文字サイズ等調整済みCSSクラスを適用
+                // Setで重複削除し、降順(4,3,2...)で表示
+                const uniqueSlips = [...new Set(flagsAtPos[f.k])].sort((a,b)=>b-a);
                 item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${uniqueSlips.map(s=>`[${s}]`).join('')}</div>`;
                 list.appendChild(item);
             }
@@ -264,7 +253,7 @@ function update() {
     }
 
     const win = document.getElementById('reel-window');
-    // 描画ロジック（中央セット使用・描画飛びなし）
+    // 描画ロジック
     const drawTopIdx = mod(currentBottomIdx - 4, REEL_LEN) + REEL_LEN; 
     
     win.style.transform = `translate3d(0, -${drawTopIdx * 70}px, 0)`;
@@ -273,7 +262,6 @@ function update() {
 function init() {
     buildStaticTable();
     const win = document.getElementById('reel-window');
-    // DOM生成（3周分）
     for (let l = 0; l < 3; l++) {
         for (let i = 0; i < REEL_LEN; i++) {
             const n = 21 - i;
