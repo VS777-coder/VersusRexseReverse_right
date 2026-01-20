@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Versus Revise - Absolute Logic Check Tool</title>
     <style>
-        /* 全体設定: スマホの縦長画面にフィットさせる */
+        /* 全体設定 */
         html, body { 
             width: 100%; height: 100%; margin: 0; padding: 0; 
             background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* 1. 上部: 状態タブ（押しやすく大きく） */
+        /* 1. 状態タブ */
         .state-tabs { 
             display: flex; width: 100%; height: 60px; flex-shrink: 0; 
             border-bottom: 2px solid #333;
@@ -26,20 +26,21 @@
         .state-tab:last-child { border-right: none; }
         .state-tab.active { opacity: 1; border-bottom: 4px solid #fff; }
         
-        #tab-hazure { background: #333; color: #eee; }
+        /* タブの色設定（ボーナス未成立を白に） */
+        #tab-hazure { background: #ffffff; color: #000000; } /* 白背景・黒文字 */
         #tab-x_flag { background: #00008b; color: #fff; }
         #tab-seven_flag { background: #8b0000; color: #fff; }
         #tab-bar_flag { background: #333; color: #ccc; }
 
-        /* メインエリア: 左右分割 */
+        /* メインエリア */
         .main-content { 
-            flex: 1; display: flex; flex-direction: row; /* 横並びに戻す */
+            flex: 1; display: flex; flex-direction: row; 
             overflow: hidden; padding: 5px; gap: 5px; background: #121212;
         }
 
         /* 2. 左側: 成立役一覧 */
         .result-area { 
-            flex: 1; /* 残りの幅を全部使う */
+            flex: 1; 
             background: #000; 
             border: 1px solid #333; 
             overflow-y: auto; 
@@ -47,41 +48,55 @@
             display: flex; flex-direction: column;
         }
 
-        /* 成立役アイテムのデザイン */
+        /* 成立役アイテム */
         .flag-item { 
             display: flex; align-items: center; 
-            height: 40px; /* 少し高さを確保 */
-            padding: 0 4px; border-bottom: 1px solid rgba(0,0,0,0.5);
+            height: 44px; /* 高さを少し広げる */
+            padding: 0 6px; border-bottom: 1px solid rgba(0,0,0,0.5);
             font-size: 13px;
-            white-space: nowrap; /* 全体的に折り返し禁止 */
+            white-space: nowrap;
         }
+        
+        /* 役名の文字サイズを大きく */
         .flag-name { 
-            width: 60px; flex-shrink: 0; font-weight: bold; 
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+            width: 85px; /* 特殊役が入るように幅を拡張 */
+            flex-shrink: 0; 
+            font-weight: bold; 
+            font-size: 15px; /* 文字サイズUP */
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
         }
+        
+        /* スベリコマ数 */
         .flag-data { 
             flex: 1; 
             font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; 
             text-align: right; 
-            letter-spacing: -1px; /* 数字を詰め込む */
-            overflow: hidden; /* はみ出し防止 */
+            letter-spacing: -1px; 
+            overflow: hidden; 
         }
 
-        /* 役ごとのカラーリング */
-        .c-hazure { background: #444; color: #fff; }
+        /* --- カラーリング設定 --- */
+        /* ハズレ: 白 */
+        .c-hazure { background: #ffffff; color: #000000; border-bottom: 1px solid #ccc; }
+        /* リプレイ */
         .c-rep    { background: #004488; color: #00ffff; }
+        /* ベル */
         .c-bell   { background: #665500; color: #ffff00; }
+        /* スイカ */
         .c-suika  { background: #004400; color: #00ff00; }
-        .c-cher   { background: #550022; color: #ff99cc; }
-        .c-tok    { background: #330044; color: #ffccff; }
+        /* チェリー: 赤 */
+        .c-cher   { background: #cc0000; color: #ffffff; }
+        /* 特殊役: 紫 */
+        .c-tok    { background: #800080; color: #ffffff; }
 
-        /* 3. 右側: リール（固定幅） */
+
+        /* 3. 右側: リール */
         .reel-frame { 
-            width: 100px; /* 必要最低限の幅 */
-            height: 490px; /* 7コマ分 (70px * 7) */
+            width: 100px; 
+            height: 490px; 
             background: #000; border: 2px solid #444; border-radius: 4px; 
             overflow: hidden; position: relative; 
-            flex-shrink: 0; /* 縮小させない */
+            flex-shrink: 0; 
             cursor: grab; touch-action: none;
         }
         .reel-frame:active { cursor: grabbing; }
@@ -96,15 +111,15 @@
         }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
 
-        /* 4. 赤枠: 3コマ分を囲む大きな1つの枠 */
+        /* 4. 赤枠 */
         .guide-box { 
             position: absolute; right: 0; 
-            width: calc(100% - 25px); /* 数字部分を除く幅 */
-            height: 210px; /* 70px * 3コマ分 */
-            top: 140px; /* 上から2コマ分(140px)空けた位置から開始 */
+            width: calc(100% - 25px); 
+            height: 210px; 
+            top: 140px; 
             pointer-events: none; z-index: 10; box-sizing: border-box; 
-            border: 4px solid #ff0000; /* 赤枠 */
-            background: rgba(255, 0, 0, 0.1); /* 内部を薄く赤く */
+            border: 4px solid #ff0000; 
+            background: rgba(255, 0, 0, 0.1); 
             box-shadow: inset 0 0 10px rgba(255,0,0,0.5);
         }
 
@@ -130,9 +145,8 @@
     </div>
 
 <script>
-// --- [データ部: 完全正解版] ---
+// --- [データ部: 最終完全版 (変更なし)] ---
 const MASTER_DATA = {
-    // 1. ボーナス未成立 (OK)
     hazure: {
         hz:[0,0,2,2,0,1,2,3,4,0,1,1,3,3,0,1,2,0,1,2,3],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
@@ -146,7 +160,6 @@ const MASTER_DATA = {
         cb:[2,3,0,1,2,3,2,3,4,0,1,2,3,0,1,0,1,2,3,2,3],
         ta:Array(21).fill(null), tb:Array(21).fill(null), tc:Array(21).fill(null), td:Array(21).fill(null), te:Array(21).fill(null)
     },
-    // 2. Xビッグ成立 (OK)
     x_flag: {
         hz:[2,3,4,3,2,1,4,3,1,0,3,0,0,2,2,0,1,0,1,0,3],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
@@ -164,13 +177,12 @@ const MASTER_DATA = {
         td:[2,3,4,0,1,2,3,4,0,0,1,0,1,2,3,4,0,0,1,2,1],
         te:[2,3,4,3,2,0,1,0,3,2,3,4,2,2,0,0,2,0,1,2,1]
     },
-    // 3. 7ビッグ成立 (画像エビデンス + 修正適用版)
     seven_flag: {
         hz:[0,1,0,3,2,0,0,0,3,2,3,4,0,1,0,3,2,3,4,2,1],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
         jr:[0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2,3],
         rr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
-        ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1], // 16番=3
+        ba:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1], 
         bb:[2,3,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,3,1],
         sa:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
         sb:[0,3,0,3,2,1,4,0,1,2,3,4,0,4,0,0,2,2,4,2,1],
@@ -182,7 +194,6 @@ const MASTER_DATA = {
         td:[2,3,0,3,2,0,1,0,3,2,1,0,2,2,4,4,1,3,3,2,1],
         te:[2,3,0,3,2,0,1,0,3,2,3,4,2,2,0,0,2,3,3,2,1]
     },
-    // 4. Reg成立 (提供データ通り)
     bar_flag: {
         hz:[2,3,0,1,0,1,2,0,1,2,3,4,0,1,0,3,2,3,4,0,1],
         nr:[3,0,1,2,3,0,1,2,3,4,0,1,2,0,1,2,3,4,0,1,2],
@@ -205,8 +216,8 @@ const MASTER_DATA = {
 const FLAGS = [
     {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプ",c:"rep"},{k:"jr",n:"JACリプ",c:"rep"},{k:"rr",n:"RTリプ",c:"rep"},
     {k:"ba",n:"ベルＡ",c:"bell"},{k:"bb",n:"ベルＢ",c:"bell"},{k:"sa",n:"スイカＡ",c:"suika"},{k:"sb",n:"スイカＢ",c:"suika"},
-    {k:"ca",n:"チェリＡ",c:"cher"},{k:"cb",n:"チェリＢ",c:"cher"},{k:"ta",n:"特役Ａ",c:"tok"},{k:"tb",n:"特役Ｂ",c:"tok"},
-    {k:"tc",n:"特役Ｃ",c:"tok"},{k:"td",n:"特役Ｄ",c:"tok"},{k:"te",n:"特役Ｅ",c:"tok"}
+    {k:"ca",n:"チェリＡ",c:"cher"},{k:"cb",n:"チェリＢ",c:"cher"},{k:"ta",n:"特殊役Ａ",c:"tok"},{k:"tb",n:"特殊役Ｂ",c:"tok"},
+    {k:"tc",n:"特殊役Ｃ",c:"tok"},{k:"td",n:"特殊役Ｄ",c:"tok"},{k:"te",n:"特殊役Ｅ",c:"tok"}
 ];
 
 const REEL_LEN = 21;
@@ -236,7 +247,6 @@ function update() {
     const list = document.getElementById('flag-list');
     list.innerHTML = '';
     
-    // ロジック補正なし
     const flagsAtPos = solvedTable[currentState][currentBottomIdx];
     
     if (flagsAtPos) {
@@ -244,7 +254,6 @@ function update() {
             if (flagsAtPos[f.k]) {
                 const item = document.createElement('div');
                 item.className = `flag-item c-${f.c}`;
-                // Setで重複削除し、降順(4,3,2...)で表示
                 const uniqueSlips = [...new Set(flagsAtPos[f.k])].sort((a,b)=>b-a);
                 item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${uniqueSlips.map(s=>`[${s}]`).join('')}</div>`;
                 list.appendChild(item);
@@ -253,7 +262,6 @@ function update() {
     }
 
     const win = document.getElementById('reel-window');
-    // 描画ロジック
     const drawTopIdx = mod(currentBottomIdx - 4, REEL_LEN) + REEL_LEN; 
     
     win.style.transform = `translate3d(0, -${drawTopIdx * 70}px, 0)`;
