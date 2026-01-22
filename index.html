@@ -3,45 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Right Reel Logic Check Tool</title>
+    <title>Versus Revise - Absolute Logic Check Tool (Final Corrected Data)</title>
     <style>
-        /* のスタイルを継承し、右リール用に最適化 */
+        /* 全体設定 */
         html, body { 
             width: 100%; height: 100%; margin: 0; padding: 0; 
-            background: #000; color: #fff; font-family: sans-serif;
+            background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden; display: flex; flex-direction: column;
         }
-        .state-tabs { display: flex; width: 100%; height: 60px; flex-shrink: 0; border-bottom: 2px solid #333; }
+
+        /* 1. 状態タブ */
+        .state-tabs { 
+            display: flex; width: 100%; height: 60px; flex-shrink: 0; 
+            border-bottom: 2px solid #333;
+        }
         .state-tab { 
             flex: 1; display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: bold; cursor: pointer; border-right: 1px solid #222; opacity: 0.6;
+            font-size: 11px; font-weight: bold; cursor: pointer; 
+            border-right: 1px solid #222; opacity: 0.6; transition: 0.2s;
+            line-height: 1.2; text-align: center; padding: 0 2px;
         }
+        .state-tab:last-child { border-right: none; }
         .state-tab.active { opacity: 1; border-bottom: 4px solid #fff; }
-        #tab-hazure { background: #ffffff; color: #000; }
+        
+        /* タブの色設定 */
+        #tab-hazure { background: #ffffff; color: #000000; }
         #tab-x_flag { background: #00008b; color: #fff; }
         #tab-seven_flag { background: #8b0000; color: #fff; }
         #tab-bar_flag { background: #333; color: #ccc; }
 
-        .main-content { flex: 1; display: flex; overflow: hidden; padding: 5px; gap: 5px; background: #121212; }
-        .result-area { flex: 1; background: #000; border: 1px solid #333; overflow-y: auto; }
-        .flag-item { display: flex; align-items: center; height: 44px; padding: 0 6px; border-bottom: 1px solid rgba(0,0,0,0.5); font-size: 13px; }
-        .flag-name { width: 85px; flex-shrink: 0; font-weight: bold; font-size: 15px; }
-        .flag-data { flex: 1; font-family: monospace; font-weight: bold; font-size: 16px; text-align: right; }
+        /* メインエリア */
+        .main-content { 
+            flex: 1; display: flex; flex-direction: row; 
+            overflow: hidden; padding: 5px; gap: 5px; background: #121212;
+        }
 
-        /* のカラー設定 */
-        .c-hazure { background: #ffffff; color: #000; }
-        .c-rep { background: #004488; color: #00ffff; }
-        .c-bell { background: #665500; color: #ffff00; }
-        .c-suika { background: #004400; color: #00ff00; }
-        .c-cher { background: #cc0000; color: #fff; }
-        .c-tok { background: #330044; color: #ffccff; }
+        /* 2. 左側: 成立役一覧 */
+        .result-area { 
+            flex: 1; 
+            background: #000; 
+            border: 1px solid #333; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: column;
+        }
 
-        .reel-frame { width: 100px; height: 490px; background: #000; border: 2px solid #444; position: relative; flex-shrink: 0; cursor: grab; touch-action: none; }
-        #reel-window { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; }
+        /* 成立役アイテム */
+        .flag-item { 
+            display: flex; align-items: center; 
+            height: 44px; 
+            padding: 0 6px; border-bottom: 1px solid rgba(0,0,0,0.5);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        /* 役名の文字サイズ */
+        .flag-name { 
+            width: 85px; 
+            flex-shrink: 0; 
+            font-weight: bold; 
+            font-size: 15px; 
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+        }
+        
+        /* スベリコマ数 */
+        .flag-data { 
+            flex: 1; 
+            font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; 
+            text-align: right; 
+            letter-spacing: -1px; 
+            overflow: hidden; 
+        }
+
+        /* --- カラーリング設定 --- */
+        /* ハズレ: 白 */
+        .c-hazure { background: #ffffff; color: #000000; border-bottom: 1px solid #ccc; }
+        /* リプレイ */
+        .c-rep    { background: #004488; color: #00ffff; }
+        /* ベル */
+        .c-bell   { background: #665500; color: #ffff00; }
+        /* スイカ */
+        .c-suika  { background: #004400; color: #00ff00; }
+        /* チェリー: 紫っぽさを消し、鮮やかな赤に変更 */
+        .c-cher   { background: #cc0000; color: #ffffff; }
+        /* 特殊役: 紫背景+薄紫文字 */
+        .c-tok    { background: #330044; color: #ffccff; }
+
+
+        /* 3. 右側: リール */
+        .reel-frame { 
+            width: 100px; 
+            height: 490px; 
+            background: #000; border: 2px solid #444; border-radius: 4px; 
+            overflow: hidden; position: relative; 
+            flex-shrink: 0; 
+            cursor: grab; touch-action: none;
+        }
+        .reel-frame:active { cursor: grabbing; }
+
+        #reel-window { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; will-change: transform; }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #222; width: 100%; box-sizing: border-box; }
-        .index-num { width: 25px; color: #d4af37; background: #111; text-align: center; font-size: 12px; display: flex; align-items: center; justify-content: center; }
-        .symbol-image { flex: 1; height: 100%; background-image: url('s_versus_rexse-reel.gif'); background-size: 300% 2100%; background-position: 100% 0; }
-        .guide-box { position: absolute; right: 0; width: calc(100% - 25px); height: 210px; top: 140px; border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.1); z-index: 10; pointer-events: none; }
+        .index-num { 
+            width: 25px; color: #d4af37; background: #111; 
+            text-align: center; font-size: 12px; font-weight: bold; 
+            display: flex; align-items: center; justify-content: center; 
+            border-right: 1px solid #333; 
+        }
+        .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
+
+        /* 4. 赤枠 */
+        .guide-box { 
+            position: absolute; right: 0; 
+            width: calc(100% - 25px); 
+            height: 210px; 
+            top: 140px; 
+            pointer-events: none; z-index: 10; box-sizing: border-box; 
+            border: 4px solid #ff0000; 
+            background: rgba(255, 0, 0, 0.1); 
+            box-shadow: inset 0 0 10px rgba(255,0,0,0.5);
+        }
+
     </style>
 </head>
 <body>
@@ -53,7 +134,10 @@
     </div>
 
     <div class="main-content">
-        <div class="result-area"><div id="flag-list"></div></div>
+        <div class="result-area">
+            <div id="flag-list"></div>
+        </div>
+
         <div id="reel-touch-area" class="reel-frame">
             <div class="guide-box"></div>
             <div id="reel-window"></div>
@@ -61,19 +145,23 @@
     </div>
 
 <script>
-// で修正した右リール第1停止用のMASTER_DATA
+/* MASTER_DATA Correct Mapping:
+   Rule: Data N is used for Reel N+1.
+   Mapping Order (Array Index 0 to 20):
+   [Data20, Data19, ..., Data1, Data21]
+*/
 const MASTER_DATA = {
     hazure: {
-        hz: [0, 0, 2, 2, 0, 1, 2, 3, 4, 0, 1, 1, 3, 3, 0, 1, 2, 0, 1, 2, 3],
-        nr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        jr: [0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3],
-        rr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        sa: [0, 3, 0, 3, 2, 1, 4, 0, 4, 0, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1],
-        sb: [0, 3, 0, 3, 2, 1, 4, 0, 4, 0, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1],
-        ca: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
-        cb: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
+        hz: [0, 1, 2, 0, 1, 0, 3, 2, 3, 1, 1, 3, 3, 1, 1, 3, 3, 1, 0, 3, 2],
+        nr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 3],
+        jr: [0, 3, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
+        rr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 3],
+        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        sa: [0, 3, 2, 1, 4, 0, 4, 0, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 3, 0],
+        sb: [0, 3, 2, 1, 4, 0, 4, 0, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 3, 0],
+        ca: [2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2],
+        cb: [2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2],
         ta: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
         tb: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
         tc: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
@@ -81,55 +169,55 @@ const MASTER_DATA = {
         te: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
     },
     x_flag: {
-        hz: [2, 3, 4, 3, 2, 1, 4, 3, 1, 0, 3, 0, 0, 2, 2, 0, 1, 0, 1, 0, 3],
-        nr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        jr: [0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3],
-        rr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        sa: [2, 3, 4, 3, 2, 1, 4, 3, 1, 0, 3, 2, 0, 4, 2, 0, 1, 0, 1, 0, 3],
-        sb: [2, 3, 4, 3, 2, 1, 4, 3, 1, 0, 3, 2, 0, 4, 2, 0, 1, 0, 1, 0, 3],
-        ca: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
-        cb: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
-        ta: [2, 3, 4, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 0, 1, 2, 1],
-        tb: [2, 3, 4, 3, 2, 0, 1, 0, 3, 2, 3, 0, 2, 2, 4, 4, 2, 0, 1, 2, 1],
-        tc: [2, 3, 4, 3, 2, 0, 1, 0, 3, 2, 3, 0, 2, 2, 4, 4, 2, 0, 2, 2, 1],
-        td: [2, 3, 4, 0, 1, 2, 3, 4, 0, 0, 1, 0, 1, 2, 3, 4, 0, 0, 1, 2, 1],
-        te: [2, 3, 4, 3, 2, 0, 1, 0, 3, 2, 3, 4, 3, 2, 0, 0, 2, 0, 1, 2, 1]
+        hz: [3, 2, 1, 4, 3, 1, 0, 3, 0, 0, 2, 2, 0, 1, 0, 3, 4, 4, 1, 2, 2],
+        nr: [3, 1, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 3],
+        jr: [0, 1, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1],
+        rr: [3, 1, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 3],
+        ba: [2, 1, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2],
+        bb: [2, 1, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2],
+        sa: [2, 1, 0, 1, 2, 4, 3, 1, 0, 3, 2, 0, 4, 2, 0, 1, 0, 1, 0, 3, 2],
+        sb: [2, 1, 0, 1, 2, 4, 3, 1, 0, 3, 2, 0, 4, 2, 0, 1, 0, 1, 0, 3, 2],
+        ca: [2, 1, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3, 4, 1, 2, 3, 2],
+        cb: [2, 1, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3, 4, 1, 2, 3, 2],
+        ta: [4, 4, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 0, 1, 2, 1, 2, 2],
+        tb: [4, 3, 2, 0, 1, 0, 3, 2, 3, 0, 2, 2, 4, 4, 2, 0, 1, 2, 1, 2, 2],
+        tc: [4, 3, 2, 0, 1, 0, 3, 2, 3, 0, 2, 2, 4, 4, 2, 0, 1, 2, 1, 2, 2],
+        td: [4, 0, 1, 2, 3, 4, 0, 0, 1, 0, 1, 2, 3, 4, 0, 0, 1, 2, 1, 2, 2],
+        te: [4, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 0, 1, 2, 1, 2, 2]
     },
     seven_flag: {
-        hz: [0, 1, 0, 3, 2, 0, 0, 0, 3, 2, 3, 4, 0, 1, 0, 3, 2, 3, 4, 2, 1],
-        nr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        jr: [0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3],
-        rr: [3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2],
-        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-        sa: [0, 3, 0, 3, 2, 1, 1, 0, 1, 2, 3, 4, 0, 4, 1, 0, 2, 2, 4, 2, 1],
-        sb: [0, 3, 0, 3, 2, 1, 1, 0, 1, 2, 3, 4, 0, 4, 1, 0, 2, 2, 4, 2, 1],
-        ca: [2, 3, 0, 1, 1, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 3, 1, 2, 3, 2, 3],
-        cb: [2, 3, 0, 1, 1, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 3, 1, 2, 3, 2, 3],
-        ta: [2, 3, 0, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 3, 2, 2, 3, 2, 0, 1],
-        tb: [1, 2, 2, 3, 0, 0, 1, 0, 1, 2, 4, 4, 1, 2, 3, 3, 3, 1, 1, 3, 0],
-        tc: [2, 3, 0, 3, 2, 0, 1, 0, 1, 2, 4, 4, 2, 2, 2, 2, 2, 3, 2, 2, 1],
-        td: [2, 3, 0, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 3, 3, 3, 3, 3, 2, 1],
-        te: [2, 3, 0, 3, 2, 0, 1, 0, 3, 2, 1, 4, 2, 2, 3, 3, 2, 3, 3, 2, 1]
+        hz: [0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 0, 3, 2, 0, 0, 0, 3, 2, 3, 3],
+        nr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1],
+        jr: [0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 0],
+        rr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1],
+        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        sa: [0, 3, 2, 1, 4, 0, 1, 2, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 0, 2],
+        sb: [0, 3, 2, 1, 4, 0, 1, 2, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 0, 2],
+        ca: [2, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 0, 1, 2, 3, 2, 3, 1, 0, 1, 2],
+        cb: [2, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 0, 1, 2, 3, 2, 3, 1, 0, 1, 2],
+        ta: [2, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 3, 2, 0, 1, 2, 2],
+        tb: [1, 2, 0, 0, 1, 0, 1, 2, 3, 4, 3, 2, 3, 4, 3, 1, 1, 3, 0, 2, 1],
+        tc: [2, 3, 2, 0, 1, 0, 1, 2, 3, 4, 2, 2, 4, 4, 2, 3, 2, 2, 1, 2, 2],
+        td: [2, 3, 2, 0, 1, 0, 3, 2, 1, 0, 2, 2, 4, 4, 1, 3, 3, 2, 1, 2, 2],
+        te: [2, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 3, 3, 2, 1, 2, 2]
     },
     bar_flag: {
-        hz: [2, 3, 3, 3, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2, 3, 0, 1, 0, 1],
-        nr: [3, 0, 0, 0, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 3, 0, 1, 2, 3, 0],
-        jr: [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 1, 2, 3, 0, 1],
-        rr: [1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 1, 2, 2, 2, 1, 1],
-        ba: [0, 3, 3, 3, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 3, 3, 3, 2, 2],
-        bb: [1, 0, 0, 0, 3, 3, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 0, 0, 0, 3, 3],
-        sa: [2, 1, 1, 1, 4, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 4, 4],
-        sb: [0, 2, 2, 2, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0],
-        ca: [1, 3, 3, 3, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1, 1],
-        cb: [2, 4, 4, 4, 2, 2, 2, 2, 0, 0, 2, 2, 2, 0, 2, 2, 4, 4, 4, 2, 2],
-        ta: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 4, 4, 0, 1, 4, 1, 2, 3, 4, 2, 1],
-        tb: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 4, 4, 3, 3, 4, 4, 2, 3, 4, 2, 1],
-        tc: [0, 1, 2, 3, 0, 1, 1, 0, 1, 0, 3, 4, 3, 3, 4, 4, 2, 3, 4, 2, 1],
-        td: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 4, 4, 3, 3, 4, 4, 0, 3, 4, 2, 1],
-        te: [0, 1, 2, 2, 0, 1, 1, 0, 1, 2, 2, 4, 0, 1, 4, 1, 2, 3, 4, 2, 1]
+        hz: [0, 1, 0, 3, 2, 0, 0, 0, 3, 2, 3, 4, 0, 1, 0, 3, 2, 3, 4, 2, 1],
+        nr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1],
+        jr: [0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 0],
+        rr: [3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1],
+        ba: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        bb: [2, 3, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 2],
+        sa: [0, 3, 2, 1, 4, 0, 1, 2, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 0, 2],
+        sb: [0, 3, 2, 1, 4, 0, 1, 2, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1, 0, 2],
+        ca: [2, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 0, 1, 2, 3, 2, 3, 1, 0, 1, 2],
+        cb: [2, 3, 1, 0, 1, 2, 3, 4, 3, 0, 1, 0, 1, 2, 3, 2, 3, 1, 0, 1, 2],
+        ta: [2, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 3, 2, 0, 1, 2, 2],
+        tb: [1, 2, 0, 0, 1, 0, 1, 2, 3, 4, 3, 2, 3, 4, 3, 1, 1, 3, 0, 2, 1],
+        tc: [2, 3, 2, 0, 1, 0, 1, 2, 3, 4, 2, 2, 4, 4, 2, 3, 2, 2, 1, 2, 2],
+        td: [2, 3, 2, 0, 1, 0, 3, 2, 1, 0, 2, 2, 4, 4, 1, 3, 3, 2, 1, 2, 2],
+        te: [2, 3, 2, 0, 1, 0, 3, 2, 3, 4, 2, 2, 0, 0, 2, 3, 3, 2, 1, 2, 2]
     }
 };
 
@@ -139,12 +227,11 @@ const FLAGS = [
     {k:"ca",n:"チェリＡ",c:"cher"},{k:"cb",n:"チェリＢ",c:"cher"},{k:"ta",n:"特殊役Ａ",c:"tok"},{k:"tb",n:"特殊役Ｂ",c:"tok"},
     {k:"tc",n:"特殊役Ｃ",c:"tok"},{k:"td",n:"特殊役Ｄ",c:"tok"},{k:"te",n:"特殊役Ｅ",c:"tok"}
 ];
-
 const REEL_LEN = 21;
 const solvedTable = {};
+
 const mod = (n, m) => ((n % m) + m) % m;
 
-// 逆引きテーブル構築
 function buildStaticTable() {
     for (const state in MASTER_DATA) {
         solvedTable[state] = Array.from({length: REEL_LEN}, () => ({}));
@@ -166,6 +253,7 @@ let currentState = 'hazure';
 function update() {
     const list = document.getElementById('flag-list');
     list.innerHTML = '';
+    
     const flagsAtPos = solvedTable[currentState][currentBottomIdx];
     
     if (flagsAtPos) {
@@ -182,25 +270,25 @@ function update() {
 
     const win = document.getElementById('reel-window');
     const drawTopIdx = mod(currentBottomIdx - 4, REEL_LEN) + REEL_LEN; 
+    
     win.style.transform = `translate3d(0, -${drawTopIdx * 70}px, 0)`;
 }
 
 function init() {
     buildStaticTable();
     const win = document.getElementById('reel-window');
-    // 右リール配列の描画 (3列並べて無限ループに見せる)
     for (let l = 0; l < 3; l++) {
         for (let i = 0; i < REEL_LEN; i++) {
             const n = 21 - i;
             const d = document.createElement('div'); d.className = 'symbol';
-            // background-positionは右リール列(100%)を基準
-            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:100% ${(21-n)*5}%"></div>`;
+            d.innerHTML = `<div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%"></div>`;
             win.appendChild(d);
         }
     }
 
     const area = document.getElementById('reel-touch-area');
     let isDragging = false, startY = 0, startIdx = 0;
+
     const onStart = (y) => { isDragging = true; startY = y; startIdx = currentBottomIdx; };
     const onMove = (y) => {
         if (!isDragging) return;
@@ -216,6 +304,7 @@ function init() {
     area.addEventListener('touchstart', e => { onStart(e.touches[0].pageY); e.preventDefault(); }, {passive:false});
     area.addEventListener('touchmove', e => { onMove(e.touches[0].pageY); e.preventDefault(); }, {passive:false});
     area.addEventListener('touchend', onEnd);
+
     update();
 }
 
