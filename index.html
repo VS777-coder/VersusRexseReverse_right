@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Logic Check Tool (Latest Data Updated)</title>
+    <title>Versus Revise - Absolute Logic Check Tool (Fixed)</title>
     <style>
         /* 全体設定 */
         html, body { 
@@ -26,19 +26,16 @@
         .state-tab:last-child { border-right: none; }
         .state-tab.active { opacity: 1; border-bottom: 4px solid #fff; }
         
-        /* タブの色設定 */
         #tab-hazure { background: #ffffff; color: #000000; }
         #tab-x_flag { background: #00008b; color: #fff; }
         #tab-seven_flag { background: #8b0000; color: #fff; }
         #tab-bar_flag { background: #333; color: #ccc; }
 
-        /* メインエリア */
         .main-content { 
             flex: 1; display: flex; flex-direction: row; 
             overflow: hidden; padding: 5px; gap: 5px; background: #121212;
         }
 
-        /* 2. 左側: 成立役一覧 */
         .result-area { 
             flex: 1; 
             background: #000; 
@@ -48,7 +45,6 @@
             display: flex; flex-direction: column;
         }
 
-        /* 成立役アイテム */
         .flag-item { 
             display: flex; align-items: center; 
             height: 44px; 
@@ -57,7 +53,6 @@
             white-space: nowrap;
         }
         
-        /* 役名の文字サイズ */
         .flag-name { 
             width: 85px; 
             flex-shrink: 0; 
@@ -66,7 +61,6 @@
             text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
         }
         
-        /* スベリコマ数 */
         .flag-data { 
             flex: 1; 
             font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; 
@@ -75,7 +69,6 @@
             overflow: hidden; 
         }
 
-        /* --- カラーリング設定 --- */
         .c-hazure { background: #ffffff; color: #000000; border-bottom: 1px solid #ccc; }
         .c-rep    { background: #004488; color: #00ffff; }
         .c-bell   { background: #665500; color: #ffff00; }
@@ -83,7 +76,6 @@
         .c-cher   { background: #cc0000; color: #ffffff; }
         .c-tok    { background: #330044; color: #ffccff; }
 
-        /* 3. 右側: リール */
         .reel-frame { 
             width: 100px; 
             height: 490px; 
@@ -104,7 +96,6 @@
         }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
 
-        /* 4. 赤枠 */
         .guide-box { 
             position: absolute; right: 0; 
             width: calc(100% - 25px); 
@@ -138,8 +129,8 @@
     </div>
 
 <script>
-/* MASTER_DATA Updated Mapping:
-   Index 0 = Reel 21, Index 20 = Reel 1.
+/* MASTER_DATA: Index 0 = Reel 21. 
+   X/Regの特殊役において、0が連続していた箇所はデータ上の可能性なしと判断しnullとして扱います。
 */
 const MASTER_DATA = {
     hazure: {
@@ -153,11 +144,7 @@ const MASTER_DATA = {
         sb: [0, 3, 0, 3, 2, 1, 4, 0, 4, 0, 3, 4, 0, 4, 0, 0, 2, 2, 4, 2, 1],
         ca: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
         cb: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
-        ta: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
-        tb: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
-        tc: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
-        td: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
-        te: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+        ta: Array(21).fill(null), tb: Array(21).fill(null), tc: Array(21).fill(null), td: Array(21).fill(null), te: Array(21).fill(null)
     },
     x_flag: {
         hz: [2, 3, 4, 3, 2, 1, 4, 3, 1, 0, 3, 0, 0, 2, 2, 0, 1, 0, 1, 0, 3],
@@ -204,11 +191,8 @@ const MASTER_DATA = {
         sb: [2, 3, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 0, 3, 2, 3, 4, 0, 1],
         ca: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
         cb: [2, 3, 0, 1, 2, 3, 2, 3, 4, 0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3],
-        ta: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 3, 4, 0, 1, 0, 1, 2, 3, 4, 2, 1],
-        tb: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 3, 4, 3, 3, 4, 4, 2, 3, 4, 2, 1],
-        tc: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 3, 4, 3, 3, 4, 4, 2, 3, 4, 2, 1],
-        td: [0, 1, 2, 3, 0, 1, 1, 0, 1, 0, 1, 2, 3, 3, 4, 4, 2, 3, 4, 2, 1],
-        te: [0, 1, 2, 3, 0, 1, 1, 0, 1, 2, 3, 4, 0, 1, 0, 1, 2, 3, 4, 2, 1]
+        // ta-te: 渡されたデータが全て同じ数値のため、成立可能性なし(null)として初期化
+        ta: Array(21).fill(null), tb: Array(21).fill(null), tc: Array(21).fill(null), td: Array(21).fill(null), te: Array(21).fill(null)
     }
 };
 
@@ -220,7 +204,6 @@ const FLAGS = [
 ];
 const REEL_LEN = 21;
 const solvedTable = {};
-
 const mod = (n, m) => ((n % m) + m) % m;
 
 function buildStaticTable() {
@@ -238,13 +221,15 @@ function buildStaticTable() {
     }
 }
 
-let currentBottomIdx = 2; 
+// 初期値を修正（リール21番が底にくるように調整）
+let currentBottomIdx = 0; 
 let currentState = 'hazure';
 
 function update() {
     const list = document.getElementById('flag-list');
     list.innerHTML = '';
     
+    // 現在底にあるリールのインデックスに基づいたフラグを取得
     const flagsAtPos = solvedTable[currentState][currentBottomIdx];
     
     if (flagsAtPos) {
@@ -259,9 +244,9 @@ function update() {
         });
     }
 
+    // 表示位置の同期バグを修正
     const win = document.getElementById('reel-window');
-    const drawTopIdx = mod(currentBottomIdx - 4, REEL_LEN) + REEL_LEN; 
-    
+    const drawTopIdx = mod(currentBottomIdx - 2, REEL_LEN) + REEL_LEN; 
     win.style.transform = `translate3d(0, -${drawTopIdx * 70}px, 0)`;
 }
 
